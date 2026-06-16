@@ -508,10 +508,10 @@ function renderForm(){
     <label class="lbl">スパーリングメモ</label><textarea id="f-sparringNotes" placeholder="攻防・気づきなど" oninput="form.sparringNotes=this.value">${esc(form.sparringNotes)}</textarea>
     <div class="row2"><div><label class="lbl">取ったサブミッション</label><input type="number" value="${form.submissions_got}" min="0" oninput="form.submissions_got=+this.value" /></div><div><label class="lbl">取られたサブミッション</label><input type="number" value="${form.submissions_given}" min="0" oninput="form.submissions_given=+this.value" /></div></div>
     <div class="divider"></div><p class="section-title">振り返り</p>
-    <label class="lbl">⚡ 行動是正（直すべき点）</label><textarea placeholder="次回修正したい動き・習慣" oninput="form.corrections=this.value">${esc(form.corrections)}</textarea>
-    <label class="lbl">✅ 行動強化（続けるべき点）</label><textarea placeholder="うまくいったこと・継続したいこと" oninput="form.reinforcements=this.value">${esc(form.reinforcements)}</textarea>
-    <label class="lbl">🎯 次回の目標</label><textarea placeholder="次の練習で意識すること" oninput="form.nextGoal=this.value">${esc(form.nextGoal)}</textarea>
-    <label class="lbl">⚠️ 体の状態・怪我（練習後）</label><input type="text" value="${esc(form.injuries)}" placeholder="痛みや疲労感など" oninput="form.injuries=this.value" />
+    <label class="lbl">⚡ 行動是正（直すべき点）</label><textarea id="f-corrections" placeholder="次回修正したい動き・習慣" oninput="form.corrections=this.value">${esc(form.corrections)}</textarea>
+    <label class="lbl">✅ 行動強化（続けるべき点）</label><textarea id="f-reinforcements" placeholder="うまくいったこと・継続したいこと" oninput="form.reinforcements=this.value">${esc(form.reinforcements)}</textarea>
+    <label class="lbl">🎯 次回の目標</label><textarea id="f-nextGoal" placeholder="次の練習で意識すること" oninput="form.nextGoal=this.value">${esc(form.nextGoal)}</textarea>
+    <label class="lbl">⚠️ 体の状態・怪我（練習後）</label><input type="text" id="f-injuries" value="${esc(form.injuries)}" placeholder="痛みや疲労感など" oninput="form.injuries=this.value" />
     <label class="lbl">コンディション</label><div class="rating-row" id="rating-row">${renderRating()}</div>
     <div class="divider"></div><p class="section-title">練習動画</p>
     <div style="font-size:12px;color:#aaa;margin-bottom:8px">YouTube・Googleドライブなどのセッション全体の動画</div>
@@ -586,8 +586,16 @@ function savePre(){
   save(); showView('list');
 }
 function savePost(){
-  const syncFields=[['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
-  syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
+  // 全フィールドをIDで確実に同期
+  const syncFields=[
+    ['f-content','content','s'],
+    ['f-sparringNotes','sparringNotes','s'],
+    ['f-corrections','corrections','s'],
+    ['f-reinforcements','reinforcements','s'],
+    ['f-nextGoal','nextGoal','s'],
+    ['f-injuries','injuries','s'],
+  ];
+  syncFields.forEach(([id,key])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
   if(editingId){
     sessions=sessions.map(x=>x.id===editingId?{...form,status:'done'}:x);
   } else {
