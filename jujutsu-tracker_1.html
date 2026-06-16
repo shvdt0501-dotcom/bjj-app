@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>柔術練習ログ</title>
+
+  <!-- PWA設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="柔術ログ" />
+  <meta name="theme-color" content="#ffffff" />
+
+  <!-- アイコン（SVGをインラインで埋め込み） -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23b07d3a'/%3E%3Ctext y='.9em' font-size='75' x='12'%3E🥋%3C/text%3E%3C/svg%3E" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #f5f5f5; color: #1a1a1a; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; max-width: 720px; margin: 0 auto; padding-bottom: 100px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+    /* ヘッダー */
+    #header { padding: 20px 20px 0; border-bottom: 1px solid #e0e0e0; background: #fff; position: sticky; top: 0; z-index: 50; padding-top: calc(20px + env(safe-area-inset-top)); }
+    #header .logo { font-size: 11px; letter-spacing: 0.2em; color: #aaa; text-transform: uppercase; }
+    #header h1 { font-size: 22px; font-weight: 700; margin: 4px 0 14px; color: #1a1a1a; letter-spacing: -0.3px; }
+    nav { display: flex; }
+    nav button { padding: 10px 16px; background: none; border: none; border-bottom: 2px solid transparent; color: #999; font-size: 13px; font-weight: 400; letter-spacing: 0.05em; cursor: pointer; }
+    nav button.active { border-bottom-color: #b07d3a; color: #b07d3a; font-weight: 600; }
+
+    /* ページ */
+    .page { padding: 16px; }
+
+    /* カード */
+    .card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+    .card.accent { border-color: #b07d3a33; }
+    .card.feedback { background: #f8f6ff; border-color: #a08acc44; }
+
+    /* 統計グリッド */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stat-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; }
+    .stat-num { font-size: 28px; font-weight: 700; color: #b07d3a; line-height: 1; }
+    .stat-label { font-size: 11px; color: #aaa; margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* セクションタイトル */
+    .section-title { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #aaa; margin-bottom: 10px; margin-top: 0; }
+
+    /* セッションアイテム */
+    .session-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+    .session-date { font-size: 12px; color: #aaa; margin-bottom: 3px; }
+    .session-type { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .session-meta { font-size: 13px; color: #999; }
+
+    /* バッジ */
+    .badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; margin-right: 4px; margin-top: 4px; }
+    .badge-brown { background: #b07d3a18; color: #b07d3a; border: 1px solid #b07d3a33; }
+    .badge-green { background: #6ea88a18; color: #6ea88a; border: 1px solid #6ea88a33; }
+    .badge-blue { background: #6ea8c818; color: #6ea8c8; border: 1px solid #6ea8c833; }
+    .badge-gray { background: #aaa18; color: #888; border: 1px solid #aaa33; }
+
+    /* フォームラベル */
+    label.lbl { display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; margin-bottom: 5px; margin-top: 14px; }
+    input, textarea, select { width: 100%; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; color: #1a1a1a; padding: 9px 12px; font-size: 16px; /* 16px以上でiOSズームを防ぐ */ outline: none; font-family: inherit; }
+    textarea { resize: vertical; min-height: 72px; }
+
+    /* ボタン */
+    .btn-primary { background: #b07d3a; color: #fff; border: none; border-radius: 6px; padding: 12px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-secondary { background: none; color: #999; border: 1px solid #e0e0e0; border-radius: 6px; padding: 11px 18px; font-size: 13px; cursor: pointer; }
+    .btn-secondary.accent { color: #b07d3a; border-color: #b07d3a33; }
+    .btn-secondary.blue { color: #6a8fc8; border-color: #6a8fc833; }
+    .btn-light { background: #f0e8da; color: #b07d3a; border: none; border-radius: 6px; padding: 12px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-danger { background: none; color: #c0504a; border: 1px solid #c0504a33; border-radius: 6px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
+    .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+    /* FAB */
+    #fab { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 24px; width: 52px; height: 52px; border-radius: 26px; background: #b07d3a; color: #fff; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 20px rgba(176,125,58,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; line-height: 1; }
+
+    /* フェーズタブ */
+    .phase-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .phase-tab { flex: 1; padding: 10px 0; background: #fff; color: #999; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; cursor: pointer; letter-spacing: 0.05em; }
+    .phase-tab.active { background: #b07d3a; color: #fff; border-color: #b07d3a; font-weight: 700; }
+
+    /* 評価ボタン */
+    .rating-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .rating-btn { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #999; }
+    .rating-btn.active { background: #b07d3a18; border-color: #b07d3a; color: #b07d3a; }
+
+    /* ゴールボックス */
+    .goal-box { border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+    .goal-box.brown { background: #b07d3a0d; border: 1px solid #b07d3a2a; }
+    .goal-box.red { background: #c0504a0d; border: 1px solid #c0504a2a; }
+    .goal-box.green { background: #6ea88a0d; border: 1px solid #6ea88a2a; }
+    .goal-box.blue { background: #6ea8c80d; border: 1px solid #6ea8c82a; }
+
+    .detail-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #aaa; margin-bottom: 4px; }
+    .detail-value { font-size: 14px; color: #1a1a1a; line-height: 1.5; }
+
+    .divider { border-top: 1px solid #ececec; margin: 16px 0; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .flex-between { display: flex; justify-content: space-between; align-items: flex-start; }
+
+    /* モーダル */
+    #modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    #modal-box { background: #fff; border-radius: 12px; padding: 24px; max-width: 460px; width: 100%; }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: #aaa; margin-bottom: 16px; }
+    .url-box { background: #f5f5f5; border-radius: 6px; padding: 10px 12px; font-size: 12px; word-break: break-all; color: #555; margin-bottom: 12px; }
+
+    /* ペンディングバナー */
+    .pending-banner { background: #fff; border: 1px solid #b07d3a44; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+    .pending-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid #ececec; }
+
+
+    /* 動画プレーヤー */
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; margin-bottom: 10px; }
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px; }
+    .video-url-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .video-url-label { font-size: 11px; color: #aaa; margin-bottom: 4px; word-break: break-all; }
+    .video-link { font-size: 12px; color: #6a8fc8; word-break: break-all; text-decoration: none; }
+    /* hidden */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div id="header">
+  <div class="logo">Jiu-Jitsu</div>
+  <h1>練習ログ</h1>
+  <nav id="main-nav">
+    <button id="nav-dashboard" class="active" onclick="showView('dashboard')">ホーム</button>
+    <button id="nav-list" onclick="showView('list')">記録一覧</button>
+  </nav>
+</div>
+
+<!-- ダッシュボード -->
+<div id="view-dashboard" class="page"></div>
+
+<!-- 記録一覧 -->
+<div id="view-list" class="page hidden"></div>
+
+<!-- 詳細 -->
+<div id="view-detail" class="page hidden"></div>
+
+<!-- フォーム -->
+<div id="view-form" class="page hidden"></div>
+
+<!-- FAB -->
+<button id="fab" onclick="startNew()">＋</button>
+
+<!-- モーダル -->
+<div id="modal-bg" class="hidden">
+  <div id="modal-box"></div>
+</div>
+
+<script>
+// ───────── データ ─────────
+const STORAGE_KEY = 'jujutsu_sessions';
+const POSITIONS = ['マウント','バック','ガード','ハーフガード','サイドコントロール','ニーオンベリー','タートル','スタンド'];
+const RATING_LABELS = ['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'];
+const SESSION_TYPES = ['スパーリング','テクニック','ドリル','試合','セルフトレーニング','ノーギ','武器術'];
+
+let sessions = [];
+let currentView = 'dashboard';
+let editingId = null;
+let formPhase = 'pre';
+let selectedSessionId = null;
+let filterTag = '';
+let form = newForm();
+
+function newForm() {
+  return {
+    id: Date.now(),
+    date: new Date().toISOString().split('T')[0],
+    type: 'スパーリング',
+    duration: 60,
+    partner: '',
+    goal: '',
+    preCondition: '',
+    preInjuries: '',
+    content: '',
+    techniques: [],
+    sparringNotes: '',
+    submissions_got: 0,
+    submissions_given: 0,
+    corrections: '',
+    reinforcements: '',
+    rating: 3,
+    injuries: '',
+    nextGoal: '',
+    tags: [],
+    status: 'pre',
+    videoUrls: [],
+  };
+}
+
+function load() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) sessions = JSON.parse(s); } catch {}
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions)); } catch {}
+}
+load();
+
+// ───────── ナビ ─────────
+function showView(v) {
+  ['dashboard','list','detail','form'].forEach(x => {
+    document.getElementById('view-' + x).classList.toggle('hidden', x !== v);
+  });
+  const nav = document.getElementById('main-nav');
+  if (v === 'form') {
+    nav.classList.add('hidden');
+    document.getElementById('fab').classList.add('hidden');
+  } else {
+    nav.classList.remove('hidden');
+    document.getElementById('fab').classList.remove('hidden');
+    ['dashboard','list'].forEach(x => {
+      document.getElementById('nav-' + x).classList.toggle('active', x === v || (v === 'detail' && x === 'list'));
+    });
+  }
+  currentView = v;
+  render();
+}
+
+// ───────── レンダリング ─────────
+function render() {
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'list') renderList();
+  if (currentView === 'detail') renderDetail();
+  if (currentView === 'form') renderForm();
+}
+
+function badge(text, cls) {
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+function goalBox(label, text, cls) {
+  if (!text) return '';
+  return `<div class="goal-box ${cls}"><div class="detail-label">${label}</div><div class="detail-value">${esc(text)}</div></div>`;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const done = sessions.filter(s => s.status === 'done');
+  const pending = sessions.filter(s => s.status === 'pre');
+  const totalMin = sessions.reduce((a,b) => a + (b.duration||0), 0);
+  const avgR = done.length ? (done.reduce((a,b) => a + (b.rating||3), 0) / done.length).toFixed(1) : '—';
+
+  let html = '';
+
+  if (pending.length) {
+    html += `<div class="pending-banner"><p class="section-title" style="margin-bottom:8px">練習後の記録が未完了</p>`;
+    pending.forEach(s => {
+      html += `<div class="pending-row">
+        <div><span style="font-size:13px;color:#1a1a1a">${esc(s.date)} ${esc(s.type)}</span>
+        ${s.goal ? `<div style="font-size:11px;color:#aaa">目標: ${esc(s.goal)}</div>` : ''}</div>
+        <button class="btn-primary btn-sm" onclick="startEdit(${s.id},'post')">練習後を記録</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${done.length}</div><div class="stat-label">完了した練習</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.floor(totalMin/60)}h</div><div class="stat-label">総練習時間</div></div>
+    <div class="stat-card"><div class="stat-num">${pending.length}</div><div class="stat-label">記録待ち</div></div>
+    <div class="stat-card"><div class="stat-num">${avgR}</div><div class="stat-label">平均コンディション</div></div>
+  </div>`;
+
+  html += `<p class="section-title">最近の練習</p>`;
+  const recent = sessions.slice(0, 5);
+  if (!recent.length) {
+    html += `<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">右下の＋ボタンで記録を追加しましょう</div></div>`;
+  }
+  recent.forEach(s => {
+    html += sessionItemHtml(s);
+  });
+
+  document.getElementById('view-dashboard').innerHTML = html;
+}
+
+function sessionItemHtml(s) {
+  const statusBadge = s.status === 'pre' ? badge('記録待ち','badge-brown') : badge('完了','badge-green');
+  const emoji = ['😞','😕','😐','🙂','😄'][(s.rating||3)-1];
+  return `<div class="session-item" onclick="openDetail(${s.id})">
+    <div class="flex-between">
+      <div>
+        <div class="session-date">${esc(s.date)}</div>
+        <div class="session-type">${esc(s.type)} <span class="session-meta">— ${s.duration}分</span></div>
+        ${s.partner ? `<div style="font-size:12px;color:#bbb;margin-top:2px">${esc(s.partner)}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        ${statusBadge}
+        ${s.status==='done' ? `<div style="font-size:18px;margin-top:4px">${emoji}</div>` : ''}
+      </div>
+    </div>
+    ${s.goal ? `<div style="font-size:12px;color:#aaa;margin-top:6px">🎯 ${esc(s.goal)}</div>` : ''}
+    ${(s.tags||[]).map(t => badge(esc(t),'badge-blue')).join('')}
+  </div>`;
+}
+
+// ── LIST ──
+function renderList() {
+  const allTags = [...new Set(sessions.flatMap(s => s.tags||[]))];
+  let html = '';
+
+  if (allTags.length) {
+    html += `<div style="margin-bottom:12px">
+      <span class="badge ${filterTag?'badge-brown':'badge-gray'}" style="cursor:pointer" onclick="setFilter('')">すべて</span>
+      ${allTags.map(t => `<span class="badge ${filterTag===t?'badge-brown':'badge-gray'}" style="cursor:pointer" onclick="setFilter('${esc(t)}')">${esc(t)}</span>`).join('')}
+    </div>`;
+  }
+
+  const list = filterTag ? sessions.filter(s => (s.tags||[]).includes(filterTag)) : sessions;
+  if (!list.length) html += `<div style="color:#aaa;text-align:center;margin-top:40px;font-size:14px">記録なし</div>`;
+  list.forEach(s => { html += sessionItemHtml(s); });
+
+  document.getElementById('view-list').innerHTML = html;
+}
+
+function setFilter(t) {
+  filterTag = t;
+  renderList();
+}
+
+// ── DETAIL ──
+function openDetail(id) {
+  selectedSessionId = id;
+  showView('detail');
+}
+
+function renderDetail() {
+  const s = sessions.find(x => x.id === selectedSessionId);
+  if (!s) return;
+  const emoji = ['😞','😕','😐','🙂','😄'][(s.rating||3)-1];
+
+  let html = `<div class="flex-row" style="margin-bottom:16px">
+    <button class="btn-secondary" onclick="showView('list')">← 一覧</button>
+    <button class="btn-secondary blue" onclick="openShare(${s.id})">🔗 共有</button>
+    ${s.status==='pre' ? `<button class="btn-primary" onclick="startEdit(${s.id},'post')">練習後を記録</button>` : ''}
+    <button class="btn-secondary" onclick="startEdit(${s.id},'${s.status==='pre'?'pre':'post'}')">編集</button>
+    <button class="btn-danger" onclick="deleteSession(${s.id})">削除</button>
+  </div>`;
+
+  html += `<div class="card accent">
+    <div class="detail-label">${esc(s.date)}</div>
+    <div style="font-size:20px;font-weight:700;margin:4px 0 8px">${esc(s.type)}</div>
+    ${badge(s.duration+'分','badge-brown')}
+    ${s.partner ? badge(esc(s.partner),'badge-gray') : ''}
+    ${s.status==='pre' ? badge('記録待ち','badge-brown') : badge('完了','badge-green')}
+    ${(s.tags||[]).map(t => badge(esc(t),'badge-blue')).join('')}
+  </div>`;
+
+  html += `<p class="section-title" style="margin-top:8px">練習前</p>`;
+  html += goalBox('🎯 今日の目標', s.goal, 'brown');
+  if (s.preCondition) html += `<div style="margin-bottom:10px"><div class="detail-label">体の状態</div><div class="detail-value">${esc(s.preCondition)}</div></div>`;
+  if (s.preInjuries) html += `<div style="margin-bottom:10px"><div class="detail-label">怪我・痛み</div><div class="detail-value">${esc(s.preInjuries)}</div></div>`;
+
+  if (s.status === 'done') {
+    html += `<div class="divider"></div><p class="section-title">練習後</p>`;
+    if (s.content) html += `<div style="margin-bottom:12px"><div class="detail-label">練習内容</div><div class="detail-value">${esc(s.content)}</div></div>`;
+    if ((s.techniques||[]).length) {
+      html += `<div class="detail-label">習得・練習した技</div>`;
+      s.techniques.forEach(t => {
+        html += `<div class="card" style="margin-bottom:6px">
+          <div style="font-weight:600">${esc(t.name)}</div>
+          ${t.position ? `<div style="font-size:12px;color:#aaa">${esc(t.position)}</div>` : ''}
+          ${t.notes ? `<div style="font-size:13px;color:#888;margin-top:4px">${esc(t.notes)}</div>` : ''}
+        </div>`;
+      });
+    }
+    if (s.sparringNotes) html += `<div style="margin-bottom:12px"><div class="detail-label">スパーリングメモ</div><div class="detail-value">${esc(s.sparringNotes)}</div></div>`;
+    if (s.submissions_got > 0 || s.submissions_given > 0) {
+      html += `<div class="row2" style="margin-bottom:12px">
+        <div class="stat-card"><div class="stat-num" style="color:#6ea88a">${s.submissions_got}</div><div class="stat-label">取った</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#c0504a">${s.submissions_given}</div><div class="stat-label">取られた</div></div>
+      </div>`;
+    }
+    html += goalBox('⚡ 行動是正', s.corrections, 'red');
+    html += goalBox('✅ 行動強化', s.reinforcements, 'green');
+    html += goalBox('🎯 次回の目標', s.nextGoal, 'blue');
+    if (s.injuries) html += `<div style="margin-bottom:10px"><div class="detail-label">⚠️ 体の状態・怪我（練習後）</div><div class="detail-value">${esc(s.injuries)}</div></div>`;
+    if (s.rating) html += `<div style="margin-bottom:10px"><div class="detail-label">コンディション</div><div style="font-size:18px">${RATING_LABELS[(s.rating||3)-1]}</div></div>`;
+  }
+
+
+  // 動画
+  if ((s.videoUrls||[]).length) {
+    html += `<div class="divider"></div><p class="section-title">📹 練習動画</p>`;
+    s.videoUrls.forEach(url => {
+      const embed = getEmbedHtml(url);
+      if (embed) {
+        html += embed;
+      } else {
+        html += `<div class="video-url-item"><div class="video-url-label">動画リンク</div><a class="video-link" href="${esc(url)}" target="_blank">${esc(url)}</a></div>`;
+      }
+    });
+  }
+  document.getElementById('view-detail').innerHTML = html;
+}
+
+// ── SHARE ──
+function openShare(id) {
+  const url = window.location.href.split('?')[0] + '?observe=' + id;
+  const box = document.getElementById('modal-box');
+  box.innerHTML = `<div class="modal-title">観察リンクを共有</div>
+    <div class="modal-sub">このURLをコーチや仲間に送ると、第三者視点でフィードバックを入力できます。</div>
+    <div class="url-box">${esc(url)}</div>
+    <div class="flex-row">
+      <button class="btn-primary" onclick="copyUrl('${esc(url)}',this)">URLをコピー</button>
+      <button class="btn-secondary" onclick="closeModal()">閉じる</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+function copyUrl(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = '✓ コピーしました';
+    setTimeout(() => btn.textContent = 'URLをコピー', 2000);
+  });
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').classList.add('hidden');
+}
+
+// ── FORM ──
+function startNew() {
+  editingId = null;
+  form = newForm();
+  formPhase = 'pre';
+  showView('form');
+}
+
+function startEdit(id, phase) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  editingId = id;
+  form = JSON.parse(JSON.stringify(s));
+  formPhase = phase || 'pre';
+  showView('form');
+}
+
+function setFormPhase(p) {
+  formPhase = p;
+  renderForm();
+}
+
+function deleteSession(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  sessions = sessions.filter(x => x.id !== id);
+  save();
+  showView('list');
+}
+
+function renderForm() {
+  let html = `<button class="btn-secondary" style="margin-bottom:12px" onclick="showView(editingId?'detail':'list')">← キャンセル</button>
+  <div class="phase-tabs">
+    <button class="phase-tab ${formPhase==='pre'?'active':''}" onclick="setFormPhase('pre')">練習前</button>
+    <button class="phase-tab ${formPhase==='post'?'active':''}" onclick="setFormPhase('post')">練習後</button>
+  </div>`;
+
+  if (formPhase === 'pre') {
+    html += `
+    <p class="section-title">基本情報</p>
+    <label class="lbl">日付</label>
+    <input type="date" id="f-date" value="${esc(form.date)}" onchange="form.date=this.value" />
+    <div class="row2">
+      <div>
+        <label class="lbl">種別</label>
+        <select id="f-type" onchange="form.type=this.value">
+          ${SESSION_TYPES.map(t => `<option${form.type===t?' selected':''}>${esc(t)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="lbl">時間 (分)</label>
+        <input type="number" id="f-duration" value="${form.duration}" onchange="form.duration=+this.value" min="1" />
+      </div>
+    </div>
+    <label class="lbl">相手 / 道場</label>
+    <input type="text" id="f-partner" value="${esc(form.partner)}" placeholder="例: 山田先生" oninput="form.partner=this.value" />
+    <div class="divider"></div>
+    <p class="section-title">練習前の状態</p>
+    <label class="lbl">🎯 今日の目標</label>
+    <textarea id="f-goal" placeholder="今日の練習で達成したいこと" oninput="form.goal=this.value">${esc(form.goal)}</textarea>
+    <label class="lbl">体の状態</label>
+    <input type="text" id="f-preCondition" value="${esc(form.preCondition)}" placeholder="疲労感、睡眠など" oninput="form.preCondition=this.value" />
+    <label class="lbl">怪我・痛みがある部位</label>
+    <input type="text" id="f-preInjuries" value="${esc(form.preInjuries)}" placeholder="例: 右膝に違和感" oninput="form.preInjuries=this.value" />
+    <label class="lbl">タグ</label>
+    <div class="flex-row" style="margin-bottom:6px">
+      <input type="text" id="f-tag-input" placeholder="タグを入力" style="flex:1" onkeydown="if(event.key==='Enter')addTag()" />
+      <button class="btn-secondary" onclick="addTag()">追加</button>
+    </div>
+    <div id="tag-list">${renderTags()}</div>
+    <div class="flex-row" style="margin-top:20px">
+      <button class="btn-primary" onclick="savePre()">${editingId?'練習前を更新':'練習前を保存'}</button>
+      <button class="btn-light" onclick="setFormPhase('post')">練習後を入力 →</button>
+    </div>`;
+  }
+
+  if (formPhase === 'post') {
+    html += `
+    <p class="section-title">練習内容</p>
+    <label class="lbl">練習内容メモ</label>
+    <textarea id="f-content" placeholder="今日の練習で行ったこと" oninput="form.content=this.value">${esc(form.content)}</textarea>
+    <label class="lbl">習得・練習した技</label>
+    <div id="techniques-list">${renderTechniques()}</div>
+    <button class="btn-secondary" onclick="addTechnique()" style="margin-bottom:12px">＋ 技を追加</button>
+    <label class="lbl">スパーリングメモ</label>
+    <textarea id="f-sparringNotes" placeholder="攻防・気づきなど" oninput="form.sparringNotes=this.value">${esc(form.sparringNotes)}</textarea>
+    <div class="row2">
+      <div>
+        <label class="lbl">取ったサブミッション</label>
+        <input type="number" value="${form.submissions_got}" min="0" onchange="form.submissions_got=+this.value" />
+      </div>
+      <div>
+        <label class="lbl">取られたサブミッション</label>
+        <input type="number" value="${form.submissions_given}" min="0" onchange="form.submissions_given=+this.value" />
+      </div>
+    </div>
+    <div class="divider"></div>
+    <p class="section-title">振り返り</p>
+    <label class="lbl">⚡ 行動是正（直すべき点）</label>
+    <textarea placeholder="次回修正したい動き・習慣" oninput="form.corrections=this.value">${esc(form.corrections)}</textarea>
+    <label class="lbl">✅ 行動強化（続けるべき点）</label>
+    <textarea placeholder="うまくいったこと・継続したいこと" oninput="form.reinforcements=this.value">${esc(form.reinforcements)}</textarea>
+    <label class="lbl">🎯 次回の目標</label>
+    <textarea placeholder="次の練習で意識すること" oninput="form.nextGoal=this.value">${esc(form.nextGoal)}</textarea>
+    <label class="lbl">⚠️ 体の状態・怪我（練習後）</label>
+    <input type="text" value="${esc(form.injuries)}" placeholder="痛みや疲労感など" oninput="form.injuries=this.value" />
+    <label class="lbl">コンディション</label>
+    <div class="rating-row" id="rating-row">${renderRating()}</div>
+
+    <div class="divider"></div>
+    <p class="section-title">練習動画</p>
+    <div style="font-size:12px;color:#aaa;margin-bottom:8px">YouTube・Googleドライブ・X(Twitter)などのURLを貼り付けてください</div>
+    <div id="video-list">${renderVideoUrls()}</div>
+    <div class="flex-row" style="margin-bottom:6px">
+      <input type="url" id="f-video-input" placeholder="https://..." style="flex:1" />
+      <button class="btn-secondary" onclick="addVideoUrl()">追加</button>
+    </div>
+    <div class="flex-row" style="margin-top:20px">
+      <button class="btn-primary" onclick="savePost()">完了・保存</button>
+      <button class="btn-secondary accent" onclick="setFormPhase('pre')">← 練習前に戻る</button>
+    </div>`;
+  }
+
+  document.getElementById('view-form').innerHTML = html;
+}
+
+function renderTags() {
+  return (form.tags||[]).map(t => `<span class="badge badge-blue" style="cursor:pointer" onclick="removeTag('${esc(t)}')">${esc(t)} ×</span>`).join('');
+}
+
+function addTag() {
+  const input = document.getElementById('f-tag-input');
+  const t = input.value.trim();
+  if (t && !(form.tags||[]).includes(t)) { form.tags = [...(form.tags||[]), t]; }
+  input.value = '';
+  const el = document.getElementById('tag-list');
+  if (el) el.innerHTML = renderTags();
+}
+
+function removeTag(t) {
+  form.tags = (form.tags||[]).filter(x => x !== t);
+  const el = document.getElementById('tag-list');
+  if (el) el.innerHTML = renderTags();
+}
+
+function renderTechniques() {
+  return (form.techniques||[]).map((t, i) => `
+    <div class="card" style="margin-bottom:8px">
+      <div class="row2">
+        <div><label class="lbl">技名</label><input type="text" value="${esc(t.name)}" placeholder="例: アームバー" oninput="form.techniques[${i}].name=this.value" /></div>
+        <div><label class="lbl">ポジション</label><select onchange="form.techniques[${i}].position=this.value">
+          <option value="">—</option>
+          ${POSITIONS.map(p => `<option${t.position===p?' selected':''}>${esc(p)}</option>`).join('')}
+        </select></div>
+      </div>
+      <label class="lbl">メモ</label>
+      <input type="text" value="${esc(t.notes)}" placeholder="ポイントや気づき" oninput="form.techniques[${i}].notes=this.value" />
+      <button class="btn-danger" style="margin-top:8px" onclick="removeTechnique(${i})">削除</button>
+    </div>`).join('');
+}
+
+function addTechnique() {
+  form.techniques = [...(form.techniques||[]), { id: Date.now(), name: '', position: '', notes: '' }];
+  const el = document.getElementById('techniques-list');
+  if (el) el.innerHTML = renderTechniques();
+}
+
+function removeTechnique(i) {
+  form.techniques = (form.techniques||[]).filter((_,j) => j !== i);
+  const el = document.getElementById('techniques-list');
+  if (el) el.innerHTML = renderTechniques();
+}
+
+function renderRating() {
+  return RATING_LABELS.map((l,i) =>
+    `<button class="rating-btn${form.rating===i+1?' active':''}" onclick="setRating(${i+1})">${esc(l)}</button>`
+  ).join('');
+}
+
+function setRating(r) {
+  form.rating = r;
+  const el = document.getElementById('rating-row');
+  if (el) el.innerHTML = renderRating();
+}
+
+function savePre() {
+  const updated = { ...form, status: 'pre' };
+  if (editingId) {
+    sessions = sessions.map(x => x.id === editingId ? updated : x);
+  } else {
+    updated.id = Date.now();
+    sessions = [updated, ...sessions];
+    editingId = updated.id;
+    form.id = updated.id;
+  }
+  save();
+  showView('list');
+}
+
+function savePost() {
+  const updated = { ...form, status: 'done' };
+  if (editingId) {
+    sessions = sessions.map(x => x.id === editingId ? updated : x);
+  } else {
+    updated.id = Date.now();
+    sessions = [updated, ...sessions];
+  }
+  editingId = null;
+  form = newForm();
+  save();
+  showView('list');
+}
+
+
+function renderVideoUrls() {
+  return (form.videoUrls||[]).map((url, i) => `
+    <div class="video-url-item" style="display:flex;justify-content:space-between;align-items:center">
+      <a class="video-link" href="${url}" target="_blank" style="flex:1;margin-right:8px">${url}</a>
+      <button class="btn-danger" style="padding:4px 10px;font-size:11px;white-space:nowrap" onclick="removeVideoUrl(${i})">削除</button>
+    </div>`).join('');
+}
+
+function addVideoUrl() {
+  const input = document.getElementById('f-video-input');
+  const url = input.value.trim();
+  if (!url) return;
+  form.videoUrls = [...(form.videoUrls||[]), url];
+  input.value = '';
+  const el = document.getElementById('video-list');
+  if (el) el.innerHTML = renderVideoUrls();
+}
+
+function removeVideoUrl(i) {
+  form.videoUrls = (form.videoUrls||[]).filter((_,j) => j !== i);
+  const el = document.getElementById('video-list');
+  if (el) el.innerHTML = renderVideoUrls();
+}
+
+function getEmbedHtml(url) {
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
+  if (ytMatch) {
+    return `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe></div>`;
+  }
+  // Google Drive
+  const gdMatch = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gdMatch) {
+    return `<div class="video-wrapper"><iframe src="https://drive.google.com/file/d/${gdMatch[1]}/preview" allowfullscreen></iframe></div>`;
+  }
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) {
+    return `<div class="video-wrapper"><iframe src="https://player.vimeo.com/video/${vimeoMatch[1]}" allowfullscreen></iframe></div>`;
+  }
+  // その他はリンク表示
+  return null;
+}
+
+// ───────── 初期描画 ─────────
+render();
+</script>
+</body>
+</html>
