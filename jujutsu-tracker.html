@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>柔術練習ログ</title>
+  <title>BJJ Log</title>
 
   <!-- PWA設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="柔術ログ" />
+  <meta name="apple-mobile-web-app-title" content="BJJ Log" />
   <meta name="theme-color" content="#ffffff" />
 
   <!-- アイコン（SVGをインラインで埋め込み） -->
@@ -109,6 +109,13 @@
     .pending-banner { background: #fff; border: 1px solid #b07d3a44; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
     .pending-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid #ececec; }
 
+
+    /* 動画プレーヤー */
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; margin-bottom: 10px; }
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px; object-position: bottom; }
+    .video-url-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .video-url-label { font-size: 11px; color: #aaa; margin-bottom: 4px; word-break: break-all; }
+    .video-link { font-size: 12px; color: #6a8fc8; word-break: break-all; text-decoration: none; }
     /* hidden */
     .hidden { display: none !important; }
   </style>
@@ -117,8 +124,8 @@
 
 <!-- ヘッダー -->
 <div id="header">
-  <div class="logo">Jiu-Jitsu</div>
-  <h1>練習ログ</h1>
+  <div class="logo">BJJ</div>
+  <h1>BJJ Log</h1>
   <nav id="main-nav">
     <button id="nav-dashboard" class="active" onclick="showView('dashboard')">ホーム</button>
     <button id="nav-list" onclick="showView('list')">記録一覧</button>
@@ -182,6 +189,7 @@ function newForm() {
     nextGoal: '',
     tags: [],
     status: 'pre',
+    videoUrls: [],
   };
 }
 
@@ -378,6 +386,19 @@ function renderDetail() {
     if (s.rating) html += `<div style="margin-bottom:10px"><div class="detail-label">コンディション</div><div style="font-size:18px">${RATING_LABELS[(s.rating||3)-1]}</div></div>`;
   }
 
+
+  // 動画
+  if ((s.videoUrls||[]).length) {
+    html += `<div class="divider"></div><p class="section-title">📹 練習動画</p>`;
+    s.videoUrls.forEach(url => {
+      const embed = getEmbedHtml(url);
+      if (embed) {
+        html += embed;
+      } else {
+        html += `<div class="video-url-item"><div class="video-url-label">動画リンク</div><a class="video-link" href="${esc(url)}" target="_blank">${esc(url)}</a></div>`;
+      }
+    });
+  }
   document.getElementById('view-detail').innerHTML = html;
 }
 
@@ -424,6 +445,22 @@ function startEdit(id, phase) {
 }
 
 function setFormPhase(p) {
+  // 切り替え前にDOMの現在値をformに反映
+  const syncFields = [
+    ['f-date','date','string'],
+    ['f-type','type','string'],
+    ['f-duration','duration','number'],
+    ['f-partner','partner','string'],
+    ['f-goal','goal','string'],
+    ['f-preCondition','preCondition','string'],
+    ['f-preInjuries','preInjuries','string'],
+    ['f-content','content','string'],
+    ['f-sparringNotes','sparringNotes','string'],
+  ];
+  syncFields.forEach(([id, key, type]) => {
+    const el = document.getElementById(id);
+    if (el) form[key] = type === 'number' ? +el.value : el.value;
+  });
   formPhase = p;
   renderForm();
 }
@@ -446,17 +483,17 @@ function renderForm() {
     html += `
     <p class="section-title">基本情報</p>
     <label class="lbl">日付</label>
-    <input type="date" id="f-date" value="${esc(form.date)}" onchange="form.date=this.value" />
+    <input type="date" id="f-date" value="${esc(form.date)}" oninput="form.date=this.value" />
     <div class="row2">
       <div>
         <label class="lbl">種別</label>
-        <select id="f-type" onchange="form.type=this.value">
+        <select id="f-type" oninput="form.type=this.value">
           ${SESSION_TYPES.map(t => `<option${form.type===t?' selected':''}>${esc(t)}</option>`).join('')}
         </select>
       </div>
       <div>
         <label class="lbl">時間 (分)</label>
-        <input type="number" id="f-duration" value="${form.duration}" onchange="form.duration=+this.value" min="1" />
+        <input type="number" id="f-duration" value="${form.duration}" oninput="form.duration=+this.value" min="1" />
       </div>
     </div>
     <label class="lbl">相手 / 道場</label>
@@ -494,11 +531,11 @@ function renderForm() {
     <div class="row2">
       <div>
         <label class="lbl">取ったサブミッション</label>
-        <input type="number" value="${form.submissions_got}" min="0" onchange="form.submissions_got=+this.value" />
+        <input type="number" value="${form.submissions_got}" min="0" oninput="form.submissions_got=+this.value" />
       </div>
       <div>
         <label class="lbl">取られたサブミッション</label>
-        <input type="number" value="${form.submissions_given}" min="0" onchange="form.submissions_given=+this.value" />
+        <input type="number" value="${form.submissions_given}" min="0" oninput="form.submissions_given=+this.value" />
       </div>
     </div>
     <div class="divider"></div>
@@ -513,6 +550,15 @@ function renderForm() {
     <input type="text" value="${esc(form.injuries)}" placeholder="痛みや疲労感など" oninput="form.injuries=this.value" />
     <label class="lbl">コンディション</label>
     <div class="rating-row" id="rating-row">${renderRating()}</div>
+
+    <div class="divider"></div>
+    <p class="section-title">練習動画</p>
+    <div style="font-size:12px;color:#aaa;margin-bottom:8px">YouTube・Googleドライブ・X(Twitter)などのURLを貼り付けてください</div>
+    <div id="video-list">${renderVideoUrls()}</div>
+    <div class="flex-row" style="margin-bottom:6px">
+      <input type="url" id="f-video-input" placeholder="https://..." style="flex:1" />
+      <button class="btn-secondary" onclick="addVideoUrl()">追加</button>
+    </div>
     <div class="flex-row" style="margin-top:20px">
       <button class="btn-primary" onclick="savePost()">完了・保存</button>
       <button class="btn-secondary accent" onclick="setFormPhase('pre')">← 練習前に戻る</button>
@@ -607,6 +653,51 @@ function savePost() {
   form = newForm();
   save();
   showView('list');
+}
+
+
+function renderVideoUrls() {
+  return (form.videoUrls||[]).map((url, i) => `
+    <div class="video-url-item" style="display:flex;justify-content:space-between;align-items:center">
+      <a class="video-link" href="${url}" target="_blank" style="flex:1;margin-right:8px">${url}</a>
+      <button class="btn-danger" style="padding:4px 10px;font-size:11px;white-space:nowrap" onclick="removeVideoUrl(${i})">削除</button>
+    </div>`).join('');
+}
+
+function addVideoUrl() {
+  const input = document.getElementById('f-video-input');
+  const url = input.value.trim();
+  if (!url) return;
+  form.videoUrls = [...(form.videoUrls||[]), url];
+  input.value = '';
+  const el = document.getElementById('video-list');
+  if (el) el.innerHTML = renderVideoUrls();
+}
+
+function removeVideoUrl(i) {
+  form.videoUrls = (form.videoUrls||[]).filter((_,j) => j !== i);
+  const el = document.getElementById('video-list');
+  if (el) el.innerHTML = renderVideoUrls();
+}
+
+function getEmbedHtml(url) {
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
+  if (ytMatch) {
+    return `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}?controls=1&modestbranding=1&rel=0&fs=1" allowfullscreen allow="autoplay; fullscreen"></iframe></div>`;
+  }
+  // Google Drive
+  const gdMatch = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (gdMatch) {
+    return `<div class="video-wrapper"><iframe src="https://drive.google.com/file/d/${gdMatch[1]}/preview" allowfullscreen></iframe></div>`;
+  }
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) {
+    return `<div class="video-wrapper"><iframe src="https://player.vimeo.com/video/${vimeoMatch[1]}" allowfullscreen></iframe></div>`;
+  }
+  // その他はリンク表示
+  return null;
 }
 
 // ───────── 初期描画 ─────────
