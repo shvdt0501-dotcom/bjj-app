@@ -570,15 +570,31 @@ function addVideoUrl(){ const input=document.getElementById('f-video-input'); co
 function removeVideoUrl(i){ form.videoUrls=(form.videoUrls||[]).filter((_,j)=>j!==i); const el=document.getElementById('video-list'); if(el) el.innerHTML=renderVideoUrls(); }
 
 function savePre(){
-  const updated={...form,status:'pre'};
-  if(editingId){ sessions=sessions.map(x=>x.id===editingId?updated:x); }
-  else { updated.id=Date.now(); sessions=[updated,...sessions]; editingId=updated.id; form.id=updated.id; }
+  // フォームの現在値を同期
+  const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
+  syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
+  if(editingId){
+    // 既存セッションを更新（status は pre のまま）
+    sessions=sessions.map(x=>x.id===editingId?{...form,status:'pre'}:x);
+  } else {
+    // 新規：IDを確定させてから追加
+    const newId=Date.now();
+    form.id=newId;
+    sessions=[{...form,status:'pre'},...sessions];
+    editingId=newId;
+  }
   save(); showView('list');
 }
 function savePost(){
-  const updated={...form,status:'done'};
-  if(editingId){ sessions=sessions.map(x=>x.id===editingId?updated:x); }
-  else { updated.id=Date.now(); sessions=[updated,...sessions]; }
+  const syncFields=[['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
+  syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
+  if(editingId){
+    sessions=sessions.map(x=>x.id===editingId?{...form,status:'done'}:x);
+  } else {
+    const newId=Date.now();
+    form.id=newId;
+    sessions=[{...form,status:'done'},...sessions];
+  }
   editingId=null; form=newForm(); save(); showView('list');
 }
 
