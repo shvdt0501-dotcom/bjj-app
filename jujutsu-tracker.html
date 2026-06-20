@@ -237,7 +237,7 @@ const STORAGE_KEY = 'jujutsu_sessions';
 const VMEMO_KEY   = 'jujutsu_vmemos';
 const POSITIONS = ['マウント','バック','ガード','ハーフガード','サイドコントロール','ニーオンベリー','タートル','スタンド'];
 const RATING_LABELS = ['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'];
-const SESSION_TYPES = ['スパーリング','テクニック','ドリル','試合','セルフトレーニング','ノーギ','武器術'];
+const SESSION_TYPES = ['スパーリング','クラス','テクニック','ドリル','試合','セルフトレーニング','ノーギ','武器術'];
 
 let sessions = [];
 let vmemos = []; // 参考動画メモ
@@ -253,7 +253,7 @@ let editingVmemoId = null;
 let vmemoFilter = '';
 
 function newForm() {
-  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', className:'', duration:60, startTime:'', endTime:'', partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[], observerName:'', observerComment:'', observerStrengths:'', observerImprovements:'', observerTechniques:'', observerMindset:'', observerRating:0 };
+  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', duration:60, startTime:'', endTime:'', partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[], observerName:'', observerComment:'', observerStrengths:'', observerImprovements:'', observerTechniques:'', observerMindset:'', observerRating:0 };
 }
 
 function load() {
@@ -341,7 +341,7 @@ function sessionItemHtml(s){
   const emoji=['😞','😕','😐','🙂','😄'][(s.rating||3)-1];
   return `<div class="session-item" onclick="openDetail(${s.id})">
     <div class="flex-between">
-      <div><div class="session-date">${esc(s.date)}</div><div class="session-type">${esc(s.type)}${s.className?` · ${esc(s.className)}`:''} <span class="session-meta">— ${s.duration}分</span></div>${s.partner?`<div style="font-size:12px;color:#bbb;margin-top:2px">${esc(s.partner)}</div>`:''}</div>
+      <div><div class="session-date">${esc(s.date)}</div><div class="session-type">${esc(s.type)} <span class="session-meta">— ${s.duration}分</span></div>${s.partner?`<div style="font-size:12px;color:#bbb;margin-top:2px">${esc(s.partner)}</div>`:''}</div>
       <div style="text-align:right">${badge(s.status==='pre'?'記録待ち':'完了',s.status==='pre'?'badge-brown':'badge-green')}${s.status==='done'?`<div style="font-size:18px;margin-top:4px">${emoji}</div>`:''}</div>
     </div>
     ${s.goal?`<div style="font-size:12px;color:#aaa;margin-top:6px">🎯 ${esc(s.goal)}</div>`:''}
@@ -372,7 +372,7 @@ function renderDetail(){
     <button class="btn-secondary" onclick="startEdit(${s.id},'${s.status==='pre'?'pre':'post'}')">編集</button>
     <button class="btn-danger" onclick="deleteSession(${s.id})">削除</button>
   </div>`;
-  html+=`<div class="card accent"><div class="detail-label">${esc(s.date)}</div><div style="font-size:20px;font-weight:700;margin:4px 0 8px">${esc(s.type)}${s.className?` <span style="font-size:14px;color:#aaa;font-weight:400">— ${esc(s.className)}</span>`:''}</div>${(s.startTime&&s.endTime)?badge(esc(s.startTime)+' - '+esc(s.endTime),'badge-brown'):''}${badge(s.duration+'分','badge-brown')}${s.partner?badge(esc(s.partner),'badge-gray'):''}${badge(s.status==='pre'?'記録待ち':'完了',s.status==='pre'?'badge-brown':'badge-green')}${(s.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}</div>`;
+  html+=`<div class="card accent"><div class="detail-label">${esc(s.date)}</div><div style="font-size:20px;font-weight:700;margin:4px 0 8px">${esc(s.type)}</div>${(s.startTime&&s.endTime)?badge(esc(s.startTime)+' - '+esc(s.endTime),'badge-brown'):''}${badge(s.duration+'分','badge-brown')}${s.partner?badge(esc(s.partner),'badge-gray'):''}${badge(s.status==='pre'?'記録待ち':'完了',s.status==='pre'?'badge-brown':'badge-green')}${(s.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}</div>`;
   html+=`<p class="section-title" style="margin-top:8px">練習前</p>`;
   html+=goalBox('🎯 今日の目標',s.goal,'brown');
   if(s.preCondition) html+=`<div style="margin-bottom:10px"><div class="detail-label">体の状態</div><div class="detail-value">${esc(s.preCondition)}</div></div>`;
@@ -645,22 +645,30 @@ function startEdit(id,phase){ const s=sessions.find(x=>x.id===id); if(!s) return
 function deleteSession(id){ if(!confirm('この記録を削除しますか？')) return; sessions=sessions.filter(x=>x.id!==id); save(); showView('list'); }
 
 function setFormPhase(p){
-  const fields=[['f-date','date','s'],['f-type','type','s'],['f-className','className','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s'],['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
+  const fields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s'],['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
   fields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
   formPhase=p; renderForm();
 }
 
 function syncDurationFromTimes(){
-  const st=document.getElementById('f-startTime')?.value;
-  const et=document.getElementById('f-endTime')?.value;
-  if(st && et){
-    const [sh,sm]=st.split(':').map(Number);
-    const [eh,em]=et.split(':').map(Number);
+  const stEl=document.getElementById('f-startTime');
+  const etEl=document.getElementById('f-endTime');
+  if(!stEl || !etEl) return;
+  const st=stEl.value;
+  const et=etEl.value;
+  if(st && et && st.includes(':') && et.includes(':')){
+    const stParts=st.split(':');
+    const etParts=et.split(':');
+    const sh=parseInt(stParts[0],10), sm=parseInt(stParts[1],10);
+    const eh=parseInt(etParts[0],10), em=parseInt(etParts[1],10);
+    if(isNaN(sh)||isNaN(sm)||isNaN(eh)||isNaN(em)) return;
     let mins=(eh*60+em)-(sh*60+sm);
-    if(mins<0) mins+=24*60; // 日付を跨ぐ場合（深夜練習など）
+    if(mins<=0) mins+=24*60; // 日付を跨ぐ場合（深夜練習など）
     form.duration=mins;
-    const el=document.getElementById('f-duration');
-    if(el) el.value=mins;
+    form.startTime=st;
+    form.endTime=et;
+    const durEl=document.getElementById('f-duration');
+    if(durEl) durEl.value=mins;
   }
 }
 function renderForm(){
@@ -673,10 +681,9 @@ function renderForm(){
     html+=`<p class="section-title">基本情報</p>
     <label class="lbl">日付</label><input type="date" id="f-date" value="${esc(form.date)}" oninput="form.date=this.value" />
     <label class="lbl">種別</label><select id="f-type" oninput="form.type=this.value">${SESSION_TYPES.map(t=>`<option${form.type===t?' selected':''}>${esc(t)}</option>`).join('')}</select>
-    <label class="lbl">クラス名（ジムのクラスに参加した場合）</label><input type="text" id="f-className" value="${esc(form.className)}" placeholder="例: ノーギ基礎クラス" oninput="form.className=this.value" />
     <div class="row2">
-      <div><label class="lbl">開始時刻</label><input type="time" id="f-startTime" value="${esc(form.startTime)}" oninput="form.startTime=this.value; syncDurationFromTimes();" onchange="form.startTime=this.value; syncDurationFromTimes();" /></div>
-      <div><label class="lbl">終了時刻</label><input type="time" id="f-endTime" value="${esc(form.endTime)}" oninput="form.endTime=this.value; syncDurationFromTimes();" onchange="form.endTime=this.value; syncDurationFromTimes();" /></div>
+      <div><label class="lbl">開始時刻</label><input type="time" id="f-startTime" value="${esc(form.startTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
+      <div><label class="lbl">終了時刻</label><input type="time" id="f-endTime" value="${esc(form.endTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
     </div>
     <label class="lbl">時間 (分)</label><input type="number" id="f-duration" value="${form.duration}" oninput="form.duration=+this.value" min="1" />
     <div style="font-size:11px;color:#aaa;margin-top:4px">開始・終了時刻を入れると自動で計算されます（直接入力も可）</div>
@@ -786,7 +793,7 @@ function removeVideoUrl(i){ form.videoUrls=(form.videoUrls||[]).filter((_,j)=>j!
 
 function savePre(){
   // フォームの現在値を同期
-  const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-className','className','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
+  const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
   syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
   if(editingId){
     // 既存セッションを更新（status は pre のまま）
