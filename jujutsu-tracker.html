@@ -107,6 +107,132 @@
 <div id="modal-bg" class="hidden"><div id="modal-box"></div></div>
 
 <script>
+// ── 観察者モード ──
+const _urlParams = new URLSearchParams(window.location.search);
+const _observeId = _urlParams.get('observe');
+
+if (_observeId) {
+  // 観察者モードで起動
+  document.addEventListener('DOMContentLoaded', ()=>{ initObserverMode(_observeId); });
+  // DOMContentLoadedが既に発火済みの場合
+  if (document.readyState !== 'loading') initObserverMode(_observeId);
+}
+
+function initObserverMode(sessionId) {
+  const id = parseInt(sessionId);
+  // 共有データを読み込む
+  let sharedSession = null;
+  try { const d=localStorage.getItem('shared_session_'+id); if(d) sharedSession=JSON.parse(d); } catch{}
+
+  // 既存フィードバックを読み込む
+  let feedbacks = [];
+  try { const f=localStorage.getItem('feedback_'+id); if(f) feedbacks=JSON.parse(f); } catch{}
+
+  document.getElementById('header').style.display='none';
+  document.getElementById('fab').style.display='none';
+  ['dashboard','list','detail','form','library','tech-detail','videos'].forEach(v=>{
+    document.getElementById('view-'+v).classList.add('hidden');
+  });
+
+  const container = document.createElement('div');
+  container.className = 'page';
+  container.style.paddingTop='20px';
+  document.body.appendChild(container);
+
+  if (!sharedSession) {
+    container.innerHTML=`<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">🔍</div><div style="font-size:16px;font-weight:700;margin-bottom:8px">リンクが無効です</div><div style="color:#aaa;font-size:14px">このリンクは期限切れか、送った人のSafariで一度アプリを開いて共有ボタンを押し直す必要があります。</div></div>`;
+    return;
+  }
+
+  let obForm = { observerName:'', overallComment:'', strengths:'', improvements:'', techniquesObserved:'', posturalNotes:'', mindsetNotes:'', rating:3 };
+  let submitted = false;
+
+  function renderObserver() {
+    if (submitted) {
+      container.innerHTML=`<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">✅</div><div style="font-size:16px;font-weight:700;margin-bottom:8px">送信完了！</div><div style="color:#aaa;font-size:14px">フィードバックを送りました。</div></div>`;
+      return;
+    }
+    const ratingLabels=['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'];
+    container.innerHTML=`
+      <div style="font-size:11px;letter-spacing:0.2em;color:#aaa;text-transform:uppercase">BJJ</div>
+      <h1 style="font-size:20px;font-weight:700;margin:4px 0 16px">観察フィードバック</h1>
+
+      <div class="card accent">
+        <div style="font-size:12px;color:#aaa">${sharedSession.date}</div>
+        <div style="font-size:18px;font-weight:700;margin:4px 0 6px">${esc(sharedSession.type)}</div>
+        <span class="badge badge-brown">${sharedSession.duration}分</span>
+        ${sharedSession.partner?`<span class="badge badge-gray">${esc(sharedSession.partner)}</span>`:''}
+        ${sharedSession.goal?`<div style="margin-top:10px;background:#b07d3a0d;border:1px solid #b07d3a2a;border-radius:6px;padding:10px"><div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em">本人の目標</div><div style="font-size:14px;margin-top:4px">${esc(sharedSession.goal)}</div></div>`:''}
+      </div>
+
+      <label class="lbl">あなたの名前</label>
+      <input type="text" id="ob-name" placeholder="例: 田中コーチ" value="${esc(obForm.observerName)}" oninput="obForm.observerName=this.value" />
+
+      <div style="border-top:1px solid #ececec;margin:16px 0"></div>
+      <p style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:10px">フィードバック</p>
+
+      <label class="lbl">総合コメント</label>
+      <textarea id="ob-overall" placeholder="練習全体を通じての印象" oninput="obForm.overallComment=this.value">${esc(obForm.overallComment)}</textarea>
+
+      <label class="lbl">✅ 良かった点・強み</label>
+      <textarea id="ob-strengths" placeholder="外から見て優れていたこと" oninput="obForm.strengths=this.value">${esc(obForm.strengths)}</textarea>
+
+      <label class="lbl">⚡ 改善してほしい点</label>
+      <textarea id="ob-improvements" placeholder="外から見た課題・修正ポイント" oninput="obForm.improvements=this.value">${esc(obForm.improvements)}</textarea>
+
+      <label class="lbl">観察した技・動き</label>
+      <textarea id="ob-tech" placeholder="使っていた技や戦略など" oninput="obForm.techniquesObserved=this.value">${esc(obForm.techniquesObserved)}</textarea>
+
+      <label class="lbl">姿勢・フォームへのコメント</label>
+      <input type="text" id="ob-posture" placeholder="スタンス、グリップ、重心など" value="${esc(obForm.posturalNotes)}" oninput="obForm.posturalNotes=this.value" />
+
+      <label class="lbl">メンタル・判断力へのコメント</label>
+      <input type="text" id="ob-mindset" placeholder="落ち着き、攻め気、判断の速さなど" value="${esc(obForm.mindsetNotes)}" oninput="obForm.mindsetNotes=this.value" />
+
+      <label class="lbl">総合評価</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="ob-rating">
+        ${ratingLabels.map((l,i)=>`<button class="rating-btn${obForm.rating===i+1?' active':''}" onclick="setObRating(${i+1})">${l}</button>`).join('')}
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn-primary" onclick="submitFeedback(${id})">フィードバックを送信</button>
+      </div>
+
+      ${feedbacks.length?`<div style="border-top:1px solid #ececec;margin:24px 0 10px"></div>
+        <p style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:10px">既存のフィードバック (${feedbacks.length}件)</p>
+        ${feedbacks.map(fb=>`<div style="background:#f8f6ff;border:1px solid #a08acc44;border-radius:8px;padding:12px;margin-bottom:8px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">👤 ${esc(fb.observerName)}</div>
+          <div style="font-size:12px;color:#aaa;margin-bottom:6px">${new Date(fb.submittedAt).toLocaleDateString('ja-JP')}</div>
+          ${fb.overallComment?`<div style="font-size:13px;margin-bottom:4px">${esc(fb.overallComment)}</div>`:''}
+          ${fb.strengths?`<div style="font-size:13px;color:#6ea88a">✅ ${esc(fb.strengths)}</div>`:''}
+          ${fb.improvements?`<div style="font-size:13px;color:#c0504a;margin-top:4px">⚡ ${esc(fb.improvements)}</div>`:''}
+        </div>`).join('')}`:''}
+    `;
+  }
+
+  window.setObRating = function(r) {
+    obForm.rating=r;
+    const el=document.getElementById('ob-rating');
+    if(el) el.innerHTML=['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'].map((l,i)=>`<button class="rating-btn${obForm.rating===i+1?' active':''}" onclick="setObRating(${i+1})">${l}</button>`).join('');
+  };
+
+  window.submitFeedback = function(sid) {
+    // フォームの値を同期
+    ['ob-name','ob-overall','ob-strengths','ob-improvements','ob-tech','ob-posture','ob-mindset'].forEach(id=>{
+      const el=document.getElementById(id); if(!el) return;
+      const keyMap={'ob-name':'observerName','ob-overall':'overallComment','ob-strengths':'strengths','ob-improvements':'improvements','ob-tech':'techniquesObserved','ob-posture':'posturalNotes','ob-mindset':'mindsetNotes'};
+      obForm[keyMap[id]]=el.value;
+    });
+    if(!obForm.observerName.trim()){ alert('名前を入力してください'); return; }
+    const feedback={ id:Date.now(), observerName:obForm.observerName, submittedAt:new Date().toISOString(), ...obForm };
+    feedbacks.push(feedback);
+    try { localStorage.setItem('feedback_'+sid, JSON.stringify(feedbacks)); } catch{}
+    submitted=true; renderObserver();
+  };
+
+  renderObserver();
+}
+
 const STORAGE_KEY = 'jujutsu_sessions';
 const VMEMO_KEY   = 'jujutsu_vmemos';
 const POSITIONS = ['マウント','バック','ガード','ハーフガード','サイドコントロール','ニーオンベリー','タートル','スタンド'];
@@ -127,7 +253,7 @@ let editingVmemoId = null;
 let vmemoFilter = '';
 
 function newForm() {
-  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', duration:60, partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[] };
+  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', duration:60, startTime:'', endTime:'', partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[], observerName:'', observerComment:'', observerStrengths:'', observerImprovements:'', observerTechniques:'', observerMindset:'', observerRating:0 };
 }
 
 function load() {
@@ -246,7 +372,7 @@ function renderDetail(){
     <button class="btn-secondary" onclick="startEdit(${s.id},'${s.status==='pre'?'pre':'post'}')">編集</button>
     <button class="btn-danger" onclick="deleteSession(${s.id})">削除</button>
   </div>`;
-  html+=`<div class="card accent"><div class="detail-label">${esc(s.date)}</div><div style="font-size:20px;font-weight:700;margin:4px 0 8px">${esc(s.type)}</div>${badge(s.duration+'分','badge-brown')}${s.partner?badge(esc(s.partner),'badge-gray'):''}${badge(s.status==='pre'?'記録待ち':'完了',s.status==='pre'?'badge-brown':'badge-green')}${(s.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}</div>`;
+  html+=`<div class="card accent"><div class="detail-label">${esc(s.date)}</div><div style="font-size:20px;font-weight:700;margin:4px 0 8px">${esc(s.type)}</div>${(s.startTime&&s.endTime)?badge(esc(s.startTime)+' - '+esc(s.endTime),'badge-brown'):''}${badge(s.duration+'分','badge-brown')}${s.partner?badge(esc(s.partner),'badge-gray'):''}${badge(s.status==='pre'?'記録待ち':'完了',s.status==='pre'?'badge-brown':'badge-green')}${(s.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}</div>`;
   html+=`<p class="section-title" style="margin-top:8px">練習前</p>`;
   html+=goalBox('🎯 今日の目標',s.goal,'brown');
   if(s.preCondition) html+=`<div style="margin-bottom:10px"><div class="detail-label">体の状態</div><div class="detail-value">${esc(s.preCondition)}</div></div>`;
@@ -277,13 +403,58 @@ function renderDetail(){
       s.videoUrls.forEach(url=>{ const e=getEmbedHtml(url); html+=e||`<div style="margin-bottom:8px"><a class="video-link" href="${esc(url)}" target="_blank">${esc(url)}</a></div>`; });
     }
   }
+  // 第三者フィードバック（フォームで入力されたもの）
+  if(s.observerName||s.observerStrengths||s.observerImprovements||s.observerTechniques||s.observerMindset||s.observerRating>0){
+    html+=`<div class="divider"></div><p class="section-title">👁 第三者フィードバック</p>`;
+    html+=`<div style="background:#f8f6ff;border:1px solid #a08acc44;border-radius:8px;padding:14px;margin-bottom:10px">`;
+    if(s.observerName) html+=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">👤 ${esc(s.observerName)}</div>`;
+    if(s.observerRating>0) html+=`<div style="font-size:14px;margin-bottom:8px">${RATING_LABELS[(s.observerRating||3)-1]}</div>`;
+    if(s.observerStrengths) html+=`<div style="font-size:13px;color:#6ea88a;margin-bottom:6px">✅ ${esc(s.observerStrengths)}</div>`;
+    if(s.observerImprovements) html+=`<div style="font-size:13px;color:#c0504a;margin-bottom:6px">⚡ ${esc(s.observerImprovements)}</div>`;
+    if(s.observerTechniques) html+=`<div style="font-size:13px;color:#aaa;margin-bottom:4px">技: ${esc(s.observerTechniques)}</div>`;
+    if(s.observerMindset) html+=`<div style="font-size:13px;color:#aaa">メンタル: ${esc(s.observerMindset)}</div>`;
+    html+=`</div>`;
+  }
+  // フィードバック表示
+  html+=`<div class="divider"></div>`;
+  let feedbacks=[];
+  try { const f=localStorage.getItem('feedback_'+s.id); if(f) feedbacks=JSON.parse(f); } catch{}
+  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <p class="section-title" style="margin:0">👁 第三者フィードバック ${feedbacks.length?'('+feedbacks.length+'件)':''}</p>
+    <button class="btn-secondary btn-sm" onclick="renderDetail()">更新</button>
+  </div>`;
+  if(!feedbacks.length){
+    html+=`<div class="card" style="text-align:center;padding:20px;color:#aaa;font-size:13px">まだフィードバックはありません<br><span style="font-size:12px">🔗 共有ボタンからリンクを送りましょう</span></div>`;
+  }
+  feedbacks.forEach(fb=>{
+    html+=`<div style="background:#f8f6ff;border:1px solid #a08acc44;border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:700;font-size:14px">👤 ${esc(fb.observerName)}</div>
+        <div style="font-size:11px;color:#aaa">${new Date(fb.submittedAt).toLocaleDateString('ja-JP')}</div>
+      </div>
+      <div style="font-size:13px;margin-bottom:4px">${['😞','😕','😐','🙂','😄'][(fb.rating||3)-1]} ${['最悪','イマイチ','普通','良い','最高'][(fb.rating||3)-1]}</div>
+      ${fb.overallComment?`<div style="font-size:13px;margin-top:6px">${esc(fb.overallComment)}</div>`:''}
+      ${fb.strengths?`<div style="font-size:13px;color:#6ea88a;margin-top:6px">✅ ${esc(fb.strengths)}</div>`:''}
+      ${fb.improvements?`<div style="font-size:13px;color:#c0504a;margin-top:6px">⚡ ${esc(fb.improvements)}</div>`:''}
+      ${fb.techniquesObserved?`<div style="font-size:13px;color:#aaa;margin-top:6px">技: ${esc(fb.techniquesObserved)}</div>`:''}
+      ${fb.posturalNotes?`<div style="font-size:13px;color:#aaa;margin-top:4px">姿勢: ${esc(fb.posturalNotes)}</div>`:''}
+      ${fb.mindsetNotes?`<div style="font-size:13px;color:#aaa;margin-top:4px">メンタル: ${esc(fb.mindsetNotes)}</div>`:''}
+    </div>`;
+  });
   document.getElementById('view-detail').innerHTML=html;
 }
 
 // ── SHARE ──
 function openShare(id){
+  // 共有用セッションデータをlocalStorageに書き込む
+  const s=sessions.find(x=>x.id===id); if(!s) return;
+  const shareData={ id:s.id, date:s.date, type:s.type, duration:s.duration, partner:s.partner, goal:s.goal, status:s.status };
+  localStorage.setItem('shared_session_'+id, JSON.stringify(shareData));
   const url=window.location.href.split('?')[0]+'?observe='+id;
-  document.getElementById('modal-box').innerHTML=`<div class="modal-title">観察リンクを共有</div><div class="modal-sub">このURLをコーチや仲間に送ると第三者フィードバックを入力できます。</div><div class="url-box">${esc(url)}</div><div class="flex-row"><button class="btn-primary" onclick="copyUrl('${esc(url)}',this)">URLをコピー</button><button class="btn-secondary" onclick="closeModal()">閉じる</button></div>`;
+  document.getElementById('modal-box').innerHTML=`<div class="modal-title">観察リンクを共有</div>
+    <div class="modal-sub">このURLをコーチや仲間に送ると第三者視点でフィードバックを入力できます。<br><br>⚠️ フィードバックを受け取るには、<b>送った相手と同じデバイス・ブラウザ</b>でアプリを開く必要があります。<br>（データはこのiPhoneのSafariに保存されるため）</div>
+    <div class="url-box">${esc(url)}</div>
+    <div class="flex-row"><button class="btn-primary" onclick="copyUrl('${esc(url)}',this)">URLをコピー</button><button class="btn-secondary" onclick="closeModal()">閉じる</button></div>`;
   document.getElementById('modal-bg').classList.remove('hidden');
 }
 function copyUrl(url,btn){ navigator.clipboard.writeText(url).then(()=>{ btn.textContent='✓ コピーしました'; setTimeout(()=>btn.textContent='URLをコピー',2000); }); }
@@ -474,11 +645,24 @@ function startEdit(id,phase){ const s=sessions.find(x=>x.id===id); if(!s) return
 function deleteSession(id){ if(!confirm('この記録を削除しますか？')) return; sessions=sessions.filter(x=>x.id!==id); save(); showView('list'); }
 
 function setFormPhase(p){
-  const fields=[['f-date','date','s'],['f-type','type','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s'],['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
+  const fields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s'],['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
   fields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
   formPhase=p; renderForm();
 }
 
+function syncDurationFromTimes(){
+  const st=document.getElementById('f-startTime')?.value;
+  const et=document.getElementById('f-endTime')?.value;
+  if(st && et){
+    const [sh,sm]=st.split(':').map(Number);
+    const [eh,em]=et.split(':').map(Number);
+    let mins=(eh*60+em)-(sh*60+sm);
+    if(mins<0) mins+=24*60; // 日付を跨ぐ場合（深夜練習など）
+    form.duration=mins;
+    const el=document.getElementById('f-duration');
+    if(el) el.value=mins;
+  }
+}
 function renderForm(){
   let html=`<button class="btn-secondary" style="margin-bottom:12px" onclick="showView(editingId?'detail':'list')">← キャンセル</button>
   <div class="phase-tabs">
@@ -488,7 +672,13 @@ function renderForm(){
   if(formPhase==='pre'){
     html+=`<p class="section-title">基本情報</p>
     <label class="lbl">日付</label><input type="date" id="f-date" value="${esc(form.date)}" oninput="form.date=this.value" />
-    <div class="row2"><div><label class="lbl">種別</label><select id="f-type" oninput="form.type=this.value">${SESSION_TYPES.map(t=>`<option${form.type===t?' selected':''}>${esc(t)}</option>`).join('')}</select></div><div><label class="lbl">時間 (分)</label><input type="number" id="f-duration" value="${form.duration}" oninput="form.duration=+this.value" min="1" /></div></div>
+    <label class="lbl">種別</label><select id="f-type" oninput="form.type=this.value">${SESSION_TYPES.map(t=>`<option${form.type===t?' selected':''}>${esc(t)}</option>`).join('')}</select>
+    <div class="row2">
+      <div><label class="lbl">開始時刻</label><input type="time" id="f-startTime" value="${esc(form.startTime)}" oninput="form.startTime=this.value; syncDurationFromTimes();" /></div>
+      <div><label class="lbl">終了時刻</label><input type="time" id="f-endTime" value="${esc(form.endTime)}" oninput="form.endTime=this.value; syncDurationFromTimes();" /></div>
+    </div>
+    <label class="lbl">時間 (分)</label><input type="number" id="f-duration" value="${form.duration}" oninput="form.duration=+this.value" min="1" />
+    <div style="font-size:11px;color:#aaa;margin-top:4px">開始・終了時刻を入れると自動で計算されます（直接入力も可）</div>
     <label class="lbl">相手 / 道場</label><input type="text" id="f-partner" value="${esc(form.partner)}" placeholder="例: 山田先生" oninput="form.partner=this.value" />
     <div class="divider"></div><p class="section-title">練習前の状態</p>
     <label class="lbl">🎯 今日の目標</label><textarea id="f-goal" placeholder="今日の練習で達成したいこと" oninput="form.goal=this.value">${esc(form.goal)}</textarea>
@@ -517,6 +707,21 @@ function renderForm(){
     <div style="font-size:12px;color:#aaa;margin-bottom:8px">YouTube・Googleドライブなどのセッション全体の動画</div>
     <div id="video-list">${renderVideoUrls()}</div>
     <div class="flex-row" style="margin-bottom:6px"><input type="url" id="f-video-input" placeholder="https://..." style="flex:1" /><button class="btn-secondary" onclick="addVideoUrl()">追加</button></div>
+    <div class="divider"></div>
+    <p class="section-title">👁 第三者フィードバック（コーチ・仲間）</p>
+    <div style="font-size:12px;color:#aaa;margin-bottom:10px">コーチや練習仲間にここを入力してもらってください</div>
+    <label class="lbl">フィードバックした人の名前</label>
+    <input type="text" id="f-observerName" value="${esc(form.observerName)}" placeholder="例: 田中コーチ" oninput="form.observerName=this.value" />
+    <label class="lbl">✅ 良かった点・強み</label>
+    <textarea id="f-observerStrengths" placeholder="外から見て優れていたこと" oninput="form.observerStrengths=this.value">${esc(form.observerStrengths)}</textarea>
+    <label class="lbl">⚡ 改善してほしい点</label>
+    <textarea id="f-observerImprovements" placeholder="外から見た課題・修正ポイント" oninput="form.observerImprovements=this.value">${esc(form.observerImprovements)}</textarea>
+    <label class="lbl">観察した技・動き</label>
+    <textarea id="f-observerTechniques" placeholder="使っていた技や戦略など" oninput="form.observerTechniques=this.value">${esc(form.observerTechniques)}</textarea>
+    <label class="lbl">メンタル・判断力へのコメント</label>
+    <input type="text" id="f-observerMindset" value="${esc(form.observerMindset)}" placeholder="落ち着き、攻め気、判断の速さなど" oninput="form.observerMindset=this.value" />
+    <label class="lbl">総合評価</label>
+    <div class="rating-row" id="observer-rating-row">${renderObserverRating()}</div>
     <div class="flex-row" style="margin-top:20px"><button class="btn-primary" onclick="savePost()">完了・保存</button><button class="btn-secondary accent" onclick="setFormPhase('pre')">← 練習前に戻る</button></div>`;
   }
   document.getElementById('view-form').innerHTML=html;
@@ -562,6 +767,15 @@ function removeTechVideoUrl(i,j){
 function addTechnique(){ form.techniques=[...(form.techniques||[]),{id:Date.now(),name:'',position:'',notes:'',videoUrls:[]}]; const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
 function removeTechnique(i){ form.techniques=(form.techniques||[]).filter((_,j)=>j!==i); const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
 
+function renderObserverRating(){
+  if(form.observerRating===0) return RATING_LABELS.map((l,i)=>`<button class="rating-btn" onclick="setObserverRating(${i+1})">${esc(l)}</button>`).join('');
+  return RATING_LABELS.map((l,i)=>`<button class="rating-btn${form.observerRating===i+1?' active':''}" onclick="setObserverRating(${i+1})">${esc(l)}</button>`).join('');
+}
+function setObserverRating(r){
+  form.observerRating=r;
+  const el=document.getElementById('observer-rating-row');
+  if(el) el.innerHTML=renderObserverRating();
+}
 function renderRating(){ return RATING_LABELS.map((l,i)=>`<button class="rating-btn${form.rating===i+1?' active':''}" onclick="setRating(${i+1})">${esc(l)}</button>`).join(''); }
 function setRating(r){ form.rating=r; const el=document.getElementById('rating-row'); if(el) el.innerHTML=renderRating(); }
 
@@ -571,7 +785,7 @@ function removeVideoUrl(i){ form.videoUrls=(form.videoUrls||[]).filter((_,j)=>j!
 
 function savePre(){
   // フォームの現在値を同期
-  const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
+  const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
   syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
   if(editingId){
     // 既存セッションを更新（status は pre のまま）
@@ -594,6 +808,11 @@ function savePost(){
     ['f-reinforcements','reinforcements','s'],
     ['f-nextGoal','nextGoal','s'],
     ['f-injuries','injuries','s'],
+    ['f-observerName','observerName','s'],
+    ['f-observerStrengths','observerStrengths','s'],
+    ['f-observerImprovements','observerImprovements','s'],
+    ['f-observerTechniques','observerTechniques','s'],
+    ['f-observerMindset','observerMindset','s'],
   ];
   syncFields.forEach(([id,key])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
   if(editingId){
