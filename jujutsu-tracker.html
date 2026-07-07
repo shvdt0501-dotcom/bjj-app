@@ -314,27 +314,122 @@ function getEmbedHtml(url) {
 }
 
 // ── DASHBOARD ──
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth(); // 0-indexed
+
 function renderDashboard() {
   const done=sessions.filter(s=>s.status==='done'), pending=sessions.filter(s=>s.status==='pre');
   const totalMin=sessions.reduce((a,b)=>a+(b.duration||0),0);
   const avgR=done.length?(done.reduce((a,b)=>a+(b.rating||3),0)/done.length).toFixed(1):'—';
   let html='';
+
   if(pending.length){
     html+=`<div class="pending-banner"><p class="section-title" style="margin-bottom:8px">練習後の記録が未完了</p>`;
     pending.forEach(s=>{ html+=`<div class="pending-row"><div><span style="font-size:13px">${esc(s.date)} ${esc(s.type)}</span>${s.goal?`<div style="font-size:11px;color:#aaa">目標: ${esc(s.goal)}</div>`:''}</div><button class="btn-primary btn-sm" onclick="startEdit(${s.id},'post')">練習後を記録</button></div>`; });
     html+=`</div>`;
   }
+
+  // カレンダー
+  html += renderCalendarHtml(calendarYear, calendarMonth);
+
   html+=`<div class="stat-grid">
     <div class="stat-card"><div class="stat-num">${done.length}</div><div class="stat-label">完了した練習</div></div>
     <div class="stat-card"><div class="stat-num">${Math.floor(totalMin/60)}h</div><div class="stat-label">総練習時間</div></div>
     <div class="stat-card"><div class="stat-num">${pending.length}</div><div class="stat-label">記録待ち</div></div>
     <div class="stat-card"><div class="stat-num">${avgR}</div><div class="stat-label">平均コンディション</div></div>
   </div>`;
+
   html+=`<p class="section-title">最近の練習</p>`;
   const recent=sessions.slice(0,5);
   if(!recent.length) html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">右下の＋ボタンで記録を追加しましょう</div></div>`;
   recent.forEach(s=>{ html+=sessionItemHtml(s); });
   document.getElementById('view-dashboard').innerHTML=html;
+}
+
+function renderCalendarHtml(year, month) {
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // 練習した日をSetで管理（date文字列）
+  const trainingDates = new Set(sessions.map(s=>s.date));
+
+  // 月の最初の日・最後の日
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month+1, 0);
+
+  // 月曜始まり：firstDayの曜日（0=日〜6=土 → 月始まりに変換）
+  let startDow = firstDay.getDay(); // 0=日
+  startDow = (startDow === 0) ? 6 : startDow - 1; // 月=0, 火=1, ..., 日=6
+
+  const daysInMonth = lastDay.getDate();
+
+  let cal = `<div class="card" style="margin-bottom:14px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#b07d3a;padding:0 8px">‹</button>
+      <div style="font-weight:700;font-size:15px">${year}年 ${monthNames[month]}</div>
+      <button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#b07d3a;padding:0 8px">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">`;
+
+  // 曜日ヘッダー（月〜日）
+  const dowLabels = ['月','火','水','木','金','土','日'];
+  dowLabels.forEach((d, i) => {
+    const color = i===5 ? '#6ea8c8' : i===6 ? '#c0504a' : '#aaa';
+    cal += `<div style="font-size:11px;color:${color};padding:4px 0;font-weight:600">${d}</div>`;
+  });
+
+  // 空白セル（月曜始まりのオフセット）
+  for(let i=0; i<startDow; i++){
+    cal += `<div></div>`;
+  }
+
+  // 日付セル
+  for(let d=1; d<=daysInMonth; d++){
+    const mm = String(month+1).padStart(2,'0');
+    const dd = String(d).padStart(2,'0');
+    const dateStr = `${year}-${mm}-${dd}`;
+    const hasTrain = trainingDates.has(dateStr);
+    const isToday  = dateStr === todayStr;
+
+    const dow = (startDow + d - 1) % 7; // 0=月〜6=日
+    const textColor = dow===5 ? '#6ea8c8' : dow===6 ? '#c0504a' : '#1a1a1a';
+
+    let cellStyle = `font-size:12px;padding:2px 0;border-radius:6px;cursor:${hasTrain?'pointer':'default'}`;
+    if(isToday) cellStyle += ';background:#b07d3a18;border:1.5px solid #b07d3a';
+
+    cal += `<div style="${cellStyle}" ${hasTrain?`onclick="calDayTap('${dateStr}')"`:''}>
+      <div style="color:${textColor};font-weight:${isToday?700:400}">${d}</div>
+      <div style="font-size:14px;line-height:1">${hasTrain?'🥋':''}</div>
+    </div>`;
+  }
+
+  cal += `</div></div>`;
+  return cal;
+}
+
+function calPrev(){
+  calendarMonth--;
+  if(calendarMonth<0){ calendarMonth=11; calendarYear--; }
+  renderDashboard();
+}
+function calNext(){
+  calendarMonth++;
+  if(calendarMonth>11){ calendarMonth=0; calendarYear++; }
+  renderDashboard();
+}
+function calDayTap(dateStr){
+  // その日の練習一覧へ
+  filterTag='';
+  showView('list');
+  // 日付でフィルタ（一時的にsessionsをその日に絞って表示）
+  const el=document.getElementById('view-list');
+  if(!el) return;
+  const daySessions=sessions.filter(s=>s.date===dateStr);
+  let html=`<div style="margin-bottom:12px"><button class="btn-secondary btn-sm" onclick="showView('list')">← 全て表示</button> <span style="font-size:13px;color:#aaa;margin-left:8px">${dateStr}</span></div>`;
+  if(!daySessions.length) html+=`<div style="color:#aaa;text-align:center;margin-top:40px">この日の記録なし</div>`;
+  daySessions.forEach(s=>{ html+=sessionItemHtml(s); });
+  el.innerHTML=html;
 }
 
 function sessionItemHtml(s){
