@@ -82,6 +82,26 @@
     .vmemo-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
     .vmemo-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
     .vmemo-note { font-size: 13px; color: #666; margin-top: 6px; line-height: 1.5; }
+    /* フローチャート（グラフ図） */
+    .fc-canvas-wrap { background: #faf8f5; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; margin-bottom: 12px; height: 480px; position: relative; touch-action: none; }
+    .fc-canvas-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+    .fc-graph-node { position: absolute; box-sizing: border-box; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+    .fc-graph-node .fc-nlabel { font-size: 9px; opacity: 0.9; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+    .fc-gn-pos { background: #6ea88a; border: 1px solid #5c9678; }
+    .fc-gn-me  { background: #b07d3a; border: 1px solid #9c6d2f; }
+    .fc-gn-opp { background: #6ea8c8; border: 1px solid #5c93b3; }
+    .fc-legend { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+    .fc-legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+    .fc-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    /* 編集用ツリー */
+    .fc-node { border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; border: 1px solid #e8e8e8; background: #fff; }
+    .fc-node.me { border-left: 4px solid #b07d3a; background: #b07d3a0a; }
+    .fc-node.opp { border-left: 4px solid #6ea8c8; background: #6ea8c80a; }
+    .fc-node.start { border-left: 4px solid #6ea88a; background: #6ea88a0a; }
+    .fc-children { margin-left: 18px; padding-left: 10px; border-left: 2px dashed #e0e0e0; margin-top: 6px; }
+    .fc-actor-badge { font-size: 10px; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
+    .fc-actor-me { background: #b07d3a; color: #fff; }
+    .fc-actor-opp { background: #6ea8c8; color: #fff; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -94,6 +114,7 @@
     <button id="nav-list" onclick="showView('list')">記録一覧</button>
     <button id="nav-library" onclick="showView('library')">技ライブラリ</button>
     <button id="nav-videos" onclick="showView('videos')">動画メモ</button>
+    <button id="nav-flowchart" onclick="showView('flowchart')">フローチャート</button>
   </nav>
 </div>
 <div id="view-dashboard" class="page"></div>
@@ -103,138 +124,16 @@
 <div id="view-library" class="page hidden"></div>
 <div id="view-tech-detail" class="page hidden"></div>
 <div id="view-videos" class="page hidden"></div>
+<div id="view-flowchart" class="page hidden"></div>
+<div id="view-flowchart-detail" class="page hidden"></div>
 <button id="fab" onclick="onFab()">＋</button>
 <div id="modal-bg" class="hidden"><div id="modal-box"></div></div>
 
 <script>
-// ── 観察者モード ──
-const _urlParams = new URLSearchParams(window.location.search);
-const _observeId = _urlParams.get('observe');
-
-if (_observeId) {
-  // 観察者モードで起動
-  document.addEventListener('DOMContentLoaded', ()=>{ initObserverMode(_observeId); });
-  // DOMContentLoadedが既に発火済みの場合
-  if (document.readyState !== 'loading') initObserverMode(_observeId);
-}
-
-function initObserverMode(sessionId) {
-  const id = parseInt(sessionId);
-  // 共有データを読み込む
-  let sharedSession = null;
-  try { const d=localStorage.getItem('shared_session_'+id); if(d) sharedSession=JSON.parse(d); } catch{}
-
-  // 既存フィードバックを読み込む
-  let feedbacks = [];
-  try { const f=localStorage.getItem('feedback_'+id); if(f) feedbacks=JSON.parse(f); } catch{}
-
-  document.getElementById('header').style.display='none';
-  document.getElementById('fab').style.display='none';
-  ['dashboard','list','detail','form','library','tech-detail','videos'].forEach(v=>{
-    document.getElementById('view-'+v).classList.add('hidden');
-  });
-
-  const container = document.createElement('div');
-  container.className = 'page';
-  container.style.paddingTop='20px';
-  document.body.appendChild(container);
-
-  if (!sharedSession) {
-    container.innerHTML=`<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">🔍</div><div style="font-size:16px;font-weight:700;margin-bottom:8px">リンクが無効です</div><div style="color:#aaa;font-size:14px">このリンクは期限切れか、送った人のSafariで一度アプリを開いて共有ボタンを押し直す必要があります。</div></div>`;
-    return;
-  }
-
-  let obForm = { observerName:'', overallComment:'', strengths:'', improvements:'', techniquesObserved:'', posturalNotes:'', mindsetNotes:'', rating:3 };
-  let submitted = false;
-
-  function renderObserver() {
-    if (submitted) {
-      container.innerHTML=`<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">✅</div><div style="font-size:16px;font-weight:700;margin-bottom:8px">送信完了！</div><div style="color:#aaa;font-size:14px">フィードバックを送りました。</div></div>`;
-      return;
-    }
-    const ratingLabels=['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'];
-    container.innerHTML=`
-      <div style="font-size:11px;letter-spacing:0.2em;color:#aaa;text-transform:uppercase">BJJ</div>
-      <h1 style="font-size:20px;font-weight:700;margin:4px 0 16px">観察フィードバック</h1>
-
-      <div class="card accent">
-        <div style="font-size:12px;color:#aaa">${sharedSession.date}</div>
-        <div style="font-size:18px;font-weight:700;margin:4px 0 6px">${esc(sharedSession.type)}</div>
-        <span class="badge badge-brown">${sharedSession.duration}分</span>
-        ${sharedSession.partner?`<span class="badge badge-gray">${esc(sharedSession.partner)}</span>`:''}
-        ${sharedSession.goal?`<div style="margin-top:10px;background:#b07d3a0d;border:1px solid #b07d3a2a;border-radius:6px;padding:10px"><div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em">本人の目標</div><div style="font-size:14px;margin-top:4px">${esc(sharedSession.goal)}</div></div>`:''}
-      </div>
-
-      <label class="lbl">あなたの名前</label>
-      <input type="text" id="ob-name" placeholder="例: 田中コーチ" value="${esc(obForm.observerName)}" oninput="obForm.observerName=this.value" />
-
-      <div style="border-top:1px solid #ececec;margin:16px 0"></div>
-      <p style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:10px">フィードバック</p>
-
-      <label class="lbl">総合コメント</label>
-      <textarea id="ob-overall" placeholder="練習全体を通じての印象" oninput="obForm.overallComment=this.value">${esc(obForm.overallComment)}</textarea>
-
-      <label class="lbl">✅ 良かった点・強み</label>
-      <textarea id="ob-strengths" placeholder="外から見て優れていたこと" oninput="obForm.strengths=this.value">${esc(obForm.strengths)}</textarea>
-
-      <label class="lbl">⚡ 改善してほしい点</label>
-      <textarea id="ob-improvements" placeholder="外から見た課題・修正ポイント" oninput="obForm.improvements=this.value">${esc(obForm.improvements)}</textarea>
-
-      <label class="lbl">観察した技・動き</label>
-      <textarea id="ob-tech" placeholder="使っていた技や戦略など" oninput="obForm.techniquesObserved=this.value">${esc(obForm.techniquesObserved)}</textarea>
-
-      <label class="lbl">姿勢・フォームへのコメント</label>
-      <input type="text" id="ob-posture" placeholder="スタンス、グリップ、重心など" value="${esc(obForm.posturalNotes)}" oninput="obForm.posturalNotes=this.value" />
-
-      <label class="lbl">メンタル・判断力へのコメント</label>
-      <input type="text" id="ob-mindset" placeholder="落ち着き、攻め気、判断の速さなど" value="${esc(obForm.mindsetNotes)}" oninput="obForm.mindsetNotes=this.value" />
-
-      <label class="lbl">総合評価</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap" id="ob-rating">
-        ${ratingLabels.map((l,i)=>`<button class="rating-btn${obForm.rating===i+1?' active':''}" onclick="setObRating(${i+1})">${l}</button>`).join('')}
-      </div>
-
-      <div style="margin-top:20px">
-        <button class="btn-primary" onclick="submitFeedback(${id})">フィードバックを送信</button>
-      </div>
-
-      ${feedbacks.length?`<div style="border-top:1px solid #ececec;margin:24px 0 10px"></div>
-        <p style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;margin-bottom:10px">既存のフィードバック (${feedbacks.length}件)</p>
-        ${feedbacks.map(fb=>`<div style="background:#f8f6ff;border:1px solid #a08acc44;border-radius:8px;padding:12px;margin-bottom:8px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:4px">👤 ${esc(fb.observerName)}</div>
-          <div style="font-size:12px;color:#aaa;margin-bottom:6px">${new Date(fb.submittedAt).toLocaleDateString('ja-JP')}</div>
-          ${fb.overallComment?`<div style="font-size:13px;margin-bottom:4px">${esc(fb.overallComment)}</div>`:''}
-          ${fb.strengths?`<div style="font-size:13px;color:#6ea88a">✅ ${esc(fb.strengths)}</div>`:''}
-          ${fb.improvements?`<div style="font-size:13px;color:#c0504a;margin-top:4px">⚡ ${esc(fb.improvements)}</div>`:''}
-        </div>`).join('')}`:''}
-    `;
-  }
-
-  window.setObRating = function(r) {
-    obForm.rating=r;
-    const el=document.getElementById('ob-rating');
-    if(el) el.innerHTML=['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'].map((l,i)=>`<button class="rating-btn${obForm.rating===i+1?' active':''}" onclick="setObRating(${i+1})">${l}</button>`).join('');
-  };
-
-  window.submitFeedback = function(sid) {
-    // フォームの値を同期
-    ['ob-name','ob-overall','ob-strengths','ob-improvements','ob-tech','ob-posture','ob-mindset'].forEach(id=>{
-      const el=document.getElementById(id); if(!el) return;
-      const keyMap={'ob-name':'observerName','ob-overall':'overallComment','ob-strengths':'strengths','ob-improvements':'improvements','ob-tech':'techniquesObserved','ob-posture':'posturalNotes','ob-mindset':'mindsetNotes'};
-      obForm[keyMap[id]]=el.value;
-    });
-    if(!obForm.observerName.trim()){ alert('名前を入力してください'); return; }
-    const feedback={ id:Date.now(), observerName:obForm.observerName, submittedAt:new Date().toISOString(), ...obForm };
-    feedbacks.push(feedback);
-    try { localStorage.setItem('feedback_'+sid, JSON.stringify(feedbacks)); } catch{}
-    submitted=true; renderObserver();
-  };
-
-  renderObserver();
-}
 
 const STORAGE_KEY = 'jujutsu_sessions';
 const VMEMO_KEY   = 'jujutsu_vmemos';
+const FLOWCHART_KEY = 'jujutsu_flowcharts';
 const POSITIONS = ['マウント','バック','ガード','ハーフガード','サイドコントロール','ニーオンベリー','タートル','スタンド'];
 const RATING_LABELS = ['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'];
 const SESSION_TYPES = ['スパーリング','クラス','テクニック','ドリル','試合','セルフトレーニング','ノーギ','武器術'];
@@ -251,14 +150,17 @@ let form = newForm();
 let vmemoForm = { title:'', url:'', note:'', tags:[], category:'' };
 let editingVmemoId = null;
 let vmemoFilter = '';
+let flowcharts = []; // 柔術フローチャート
+let selectedFlowchartId = null;
 
 function newForm() {
-  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', duration:60, startTime:'', endTime:'', partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[], observerName:'', observerComment:'', observerStrengths:'', observerImprovements:'', observerTechniques:'', observerMindset:'', observerRating:0 };
+  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', duration:60, startTime:'', endTime:'', partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[] };
 }
 
 function load() {
   try { const s = localStorage.getItem(STORAGE_KEY); if(s) sessions=JSON.parse(s); } catch{}
   try { const v = localStorage.getItem(VMEMO_KEY);   if(v) vmemos=JSON.parse(v);   } catch{}
+  try { const fc = localStorage.getItem(FLOWCHART_KEY); if(fc) flowcharts=JSON.parse(fc); } catch{}
 }
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions)); } catch{}
@@ -266,19 +168,22 @@ function save() {
 function saveVmemos() {
   try { localStorage.setItem(VMEMO_KEY, JSON.stringify(vmemos)); } catch{}
 }
+function saveFlowcharts() {
+  try { localStorage.setItem(FLOWCHART_KEY, JSON.stringify(flowcharts)); } catch{}
+}
 load();
 
 // ── ナビ ──
-const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos'];
+const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail'];
 function showView(v) {
   ALL_VIEWS.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x!==v));
   const nav = document.getElementById('main-nav');
   const fab = document.getElementById('fab');
   if (v==='form') { nav.classList.add('hidden'); fab.classList.add('hidden'); }
   else { nav.classList.remove('hidden'); fab.classList.remove('hidden'); }
-  ['dashboard','list','library','videos'].forEach(x => {
+  ['dashboard','list','library','videos','flowchart'].forEach(x => {
     const btn = document.getElementById('nav-'+x);
-    if(btn) btn.classList.toggle('active', x===v || (v==='detail'&&x==='list') || (v==='tech-detail'&&x==='library'));
+    if(btn) btn.classList.toggle('active', x===v || (v==='detail'&&x==='list') || (v==='tech-detail'&&x==='library') || (v==='flowchart-detail'&&x==='flowchart'));
   });
   currentView = v;
   render();
@@ -286,6 +191,7 @@ function showView(v) {
 
 function onFab() {
   if (currentView==='videos') startNewVmemo();
+  else if (currentView==='flowchart') startNewFlowchart();
   else startNew();
 }
 
@@ -297,6 +203,8 @@ function render() {
   if(currentView==='library')     renderLibrary();
   if(currentView==='tech-detail') renderTechDetail();
   if(currentView==='videos')      renderVideos();
+  if(currentView==='flowchart')   renderFlowchartList();
+  if(currentView==='flowchart-detail') renderFlowchartDetail();
 }
 
 function badge(text,cls){ return `<span class="badge ${cls}">${text}</span>`; }
@@ -462,7 +370,6 @@ function renderDetail(){
   const s=sessions.find(x=>x.id===selectedSessionId); if(!s) return;
   let html=`<div class="flex-row" style="margin-bottom:16px">
     <button class="btn-secondary" onclick="showView('list')">← 一覧</button>
-    <button class="btn-secondary blue" onclick="openShare(${s.id})">🔗 共有</button>
     ${s.status==='pre'?`<button class="btn-primary" onclick="startEdit(${s.id},'post')">練習後を記録</button>`:''}
     <button class="btn-secondary" onclick="startEdit(${s.id},'${s.status==='pre'?'pre':'post'}')">編集</button>
     <button class="btn-danger" onclick="deleteSession(${s.id})">削除</button>
@@ -498,60 +405,10 @@ function renderDetail(){
       s.videoUrls.forEach(url=>{ const e=getEmbedHtml(url); html+=e||`<div style="margin-bottom:8px"><a class="video-link" href="${esc(url)}" target="_blank">${esc(url)}</a></div>`; });
     }
   }
-  // 第三者フィードバック（フォームで入力されたもの）
-  if(s.observerName||s.observerStrengths||s.observerImprovements||s.observerTechniques||s.observerMindset||s.observerRating>0){
-    html+=`<div class="divider"></div><p class="section-title">👁 第三者フィードバック</p>`;
-    html+=`<div style="background:#f8f6ff;border:1px solid #a08acc44;border-radius:8px;padding:14px;margin-bottom:10px">`;
-    if(s.observerName) html+=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">👤 ${esc(s.observerName)}</div>`;
-    if(s.observerRating>0) html+=`<div style="font-size:14px;margin-bottom:8px">${RATING_LABELS[(s.observerRating||3)-1]}</div>`;
-    if(s.observerStrengths) html+=`<div style="font-size:13px;color:#6ea88a;margin-bottom:6px">✅ ${esc(s.observerStrengths)}</div>`;
-    if(s.observerImprovements) html+=`<div style="font-size:13px;color:#c0504a;margin-bottom:6px">⚡ ${esc(s.observerImprovements)}</div>`;
-    if(s.observerTechniques) html+=`<div style="font-size:13px;color:#aaa;margin-bottom:4px">技: ${esc(s.observerTechniques)}</div>`;
-    if(s.observerMindset) html+=`<div style="font-size:13px;color:#aaa">メンタル: ${esc(s.observerMindset)}</div>`;
-    html+=`</div>`;
-  }
-  // フィードバック表示
-  html+=`<div class="divider"></div>`;
-  let feedbacks=[];
-  try { const f=localStorage.getItem('feedback_'+s.id); if(f) feedbacks=JSON.parse(f); } catch{}
-  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <p class="section-title" style="margin:0">👁 第三者フィードバック ${feedbacks.length?'('+feedbacks.length+'件)':''}</p>
-    <button class="btn-secondary btn-sm" onclick="renderDetail()">更新</button>
-  </div>`;
-  if(!feedbacks.length){
-    html+=`<div class="card" style="text-align:center;padding:20px;color:#aaa;font-size:13px">まだフィードバックはありません<br><span style="font-size:12px">🔗 共有ボタンからリンクを送りましょう</span></div>`;
-  }
-  feedbacks.forEach(fb=>{
-    html+=`<div style="background:#f8f6ff;border:1px solid #a08acc44;border-radius:8px;padding:12px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <div style="font-weight:700;font-size:14px">👤 ${esc(fb.observerName)}</div>
-        <div style="font-size:11px;color:#aaa">${new Date(fb.submittedAt).toLocaleDateString('ja-JP')}</div>
-      </div>
-      <div style="font-size:13px;margin-bottom:4px">${['😞','😕','😐','🙂','😄'][(fb.rating||3)-1]} ${['最悪','イマイチ','普通','良い','最高'][(fb.rating||3)-1]}</div>
-      ${fb.overallComment?`<div style="font-size:13px;margin-top:6px">${esc(fb.overallComment)}</div>`:''}
-      ${fb.strengths?`<div style="font-size:13px;color:#6ea88a;margin-top:6px">✅ ${esc(fb.strengths)}</div>`:''}
-      ${fb.improvements?`<div style="font-size:13px;color:#c0504a;margin-top:6px">⚡ ${esc(fb.improvements)}</div>`:''}
-      ${fb.techniquesObserved?`<div style="font-size:13px;color:#aaa;margin-top:6px">技: ${esc(fb.techniquesObserved)}</div>`:''}
-      ${fb.posturalNotes?`<div style="font-size:13px;color:#aaa;margin-top:4px">姿勢: ${esc(fb.posturalNotes)}</div>`:''}
-      ${fb.mindsetNotes?`<div style="font-size:13px;color:#aaa;margin-top:4px">メンタル: ${esc(fb.mindsetNotes)}</div>`:''}
-    </div>`;
-  });
   document.getElementById('view-detail').innerHTML=html;
 }
 
 // ── SHARE ──
-function openShare(id){
-  // 共有用セッションデータをlocalStorageに書き込む
-  const s=sessions.find(x=>x.id===id); if(!s) return;
-  const shareData={ id:s.id, date:s.date, type:s.type, duration:s.duration, partner:s.partner, goal:s.goal, status:s.status };
-  localStorage.setItem('shared_session_'+id, JSON.stringify(shareData));
-  const url=window.location.href.split('?')[0]+'?observe='+id;
-  document.getElementById('modal-box').innerHTML=`<div class="modal-title">観察リンクを共有</div>
-    <div class="modal-sub">このURLをコーチや仲間に送ると第三者視点でフィードバックを入力できます。<br><br>⚠️ フィードバックを受け取るには、<b>送った相手と同じデバイス・ブラウザ</b>でアプリを開く必要があります。<br>（データはこのiPhoneのSafariに保存されるため）</div>
-    <div class="url-box">${esc(url)}</div>
-    <div class="flex-row"><button class="btn-primary" onclick="copyUrl('${esc(url)}',this)">URLをコピー</button><button class="btn-secondary" onclick="closeModal()">閉じる</button></div>`;
-  document.getElementById('modal-bg').classList.remove('hidden');
-}
 function copyUrl(url,btn){ navigator.clipboard.writeText(url).then(()=>{ btn.textContent='✓ コピーしました'; setTimeout(()=>btn.textContent='URLをコピー',2000); }); }
 function closeModal(){ document.getElementById('modal-bg').classList.add('hidden'); }
 
@@ -810,21 +667,6 @@ function renderForm(){
     <div style="font-size:12px;color:#aaa;margin-bottom:8px">YouTube・Googleドライブなどのセッション全体の動画</div>
     <div id="video-list">${renderVideoUrls()}</div>
     <div class="flex-row" style="margin-bottom:6px"><input type="url" id="f-video-input" placeholder="https://..." style="flex:1" /><button class="btn-secondary" onclick="addVideoUrl()">追加</button></div>
-    <div class="divider"></div>
-    <p class="section-title">👁 第三者フィードバック（コーチ・仲間）</p>
-    <div style="font-size:12px;color:#aaa;margin-bottom:10px">コーチや練習仲間にここを入力してもらってください</div>
-    <label class="lbl">フィードバックした人の名前</label>
-    <input type="text" id="f-observerName" value="${esc(form.observerName)}" placeholder="例: 田中コーチ" oninput="form.observerName=this.value" />
-    <label class="lbl">✅ 良かった点・強み</label>
-    <textarea id="f-observerStrengths" placeholder="外から見て優れていたこと" oninput="form.observerStrengths=this.value">${esc(form.observerStrengths)}</textarea>
-    <label class="lbl">⚡ 改善してほしい点</label>
-    <textarea id="f-observerImprovements" placeholder="外から見た課題・修正ポイント" oninput="form.observerImprovements=this.value">${esc(form.observerImprovements)}</textarea>
-    <label class="lbl">観察した技・動き</label>
-    <textarea id="f-observerTechniques" placeholder="使っていた技や戦略など" oninput="form.observerTechniques=this.value">${esc(form.observerTechniques)}</textarea>
-    <label class="lbl">メンタル・判断力へのコメント</label>
-    <input type="text" id="f-observerMindset" value="${esc(form.observerMindset)}" placeholder="落ち着き、攻め気、判断の速さなど" oninput="form.observerMindset=this.value" />
-    <label class="lbl">総合評価</label>
-    <div class="rating-row" id="observer-rating-row">${renderObserverRating()}</div>
     <div class="flex-row" style="margin-top:20px"><button class="btn-primary" onclick="savePost()">完了・保存</button><button class="btn-secondary accent" onclick="setFormPhase('pre')">← 練習前に戻る</button></div>`;
   }
   document.getElementById('view-form').innerHTML=html;
@@ -838,11 +680,11 @@ function renderTechniques(){
   return (form.techniques||[]).map((t,i)=>`
     <div class="card" style="margin-bottom:8px">
       <div class="row2">
-        <div><label class="lbl">技名</label><input type="text" value="${esc(t.name)}" placeholder="例: アームバー" oninput="form.techniques[${i}].name=this.value" /></div>
-        <div><label class="lbl">ポジション</label><select onchange="form.techniques[${i}].position=this.value"><option value="">—</option>${POSITIONS.map(p=>`<option${t.position===p?' selected':''}>${esc(p)}</option>`).join('')}</select></div>
+        <div><label class="lbl">技名</label><input type="text" id="tech-name-${i}" value="${esc(t.name)}" placeholder="例: アームバー" oninput="form.techniques[${i}].name=this.value" /></div>
+        <div><label class="lbl">ポジション</label><select id="tech-pos-${i}" onchange="form.techniques[${i}].position=this.value"><option value="">—</option>${POSITIONS.map(p=>`<option${t.position===p?' selected':''}>${esc(p)}</option>`).join('')}</select></div>
       </div>
       <label class="lbl">メモ</label>
-      <input type="text" value="${esc(t.notes)}" placeholder="ポイントや気づき" oninput="form.techniques[${i}].notes=this.value" />
+      <input type="text" id="tech-notes-${i}" value="${esc(t.notes)}" placeholder="ポイントや気づき" oninput="form.techniques[${i}].notes=this.value" />
       <label class="lbl">この技の動画URL</label>
       <div id="tech-video-list-${i}">${renderTechVideoUrls(i)}</div>
       <div class="flex-row" style="margin-bottom:4px"><input type="url" id="tech-video-input-${i}" placeholder="https://..." style="flex:1;font-size:14px" /><button class="btn-secondary btn-sm" onclick="addTechVideoUrl(${i})">追加</button></div>
@@ -870,15 +712,6 @@ function removeTechVideoUrl(i,j){
 function addTechnique(){ form.techniques=[...(form.techniques||[]),{id:Date.now(),name:'',position:'',notes:'',videoUrls:[]}]; const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
 function removeTechnique(i){ form.techniques=(form.techniques||[]).filter((_,j)=>j!==i); const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
 
-function renderObserverRating(){
-  if(form.observerRating===0) return RATING_LABELS.map((l,i)=>`<button class="rating-btn" onclick="setObserverRating(${i+1})">${esc(l)}</button>`).join('');
-  return RATING_LABELS.map((l,i)=>`<button class="rating-btn${form.observerRating===i+1?' active':''}" onclick="setObserverRating(${i+1})">${esc(l)}</button>`).join('');
-}
-function setObserverRating(r){
-  form.observerRating=r;
-  const el=document.getElementById('observer-rating-row');
-  if(el) el.innerHTML=renderObserverRating();
-}
 function renderRating(){ return RATING_LABELS.map((l,i)=>`<button class="rating-btn${form.rating===i+1?' active':''}" onclick="setRating(${i+1})">${esc(l)}</button>`).join(''); }
 function setRating(r){ form.rating=r; const el=document.getElementById('rating-row'); if(el) el.innerHTML=renderRating(); }
 
@@ -911,13 +744,17 @@ function savePost(){
     ['f-reinforcements','reinforcements','s'],
     ['f-nextGoal','nextGoal','s'],
     ['f-injuries','injuries','s'],
-    ['f-observerName','observerName','s'],
-    ['f-observerStrengths','observerStrengths','s'],
-    ['f-observerImprovements','observerImprovements','s'],
-    ['f-observerTechniques','observerTechniques','s'],
-    ['f-observerMindset','observerMindset','s'],
   ];
   syncFields.forEach(([id,key])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
+  // 技のinput値をDOMから確実に同期
+  (form.techniques||[]).forEach((t,i)=>{
+    const nameEl=document.getElementById('tech-name-'+i);
+    const posEl=document.getElementById('tech-pos-'+i);
+    const notesEl=document.getElementById('tech-notes-'+i);
+    if(nameEl) t.name=nameEl.value;
+    if(posEl) t.position=posEl.value;
+    if(notesEl) t.notes=notesEl.value;
+  });
   if(editingId){
     sessions=sessions.map(x=>x.id===editingId?{...form,status:'done'}:x);
   } else {
@@ -927,6 +764,326 @@ function savePost(){
   }
   editingId=null; form=newForm(); save(); showView('list');
 }
+
+
+// ── FLOWCHART（柔術フローチャート） ──
+function newFlowchart(){
+  return { id:Date.now(), title:'', startPosition:'', nodes:[], createdAt:new Date().toISOString() };
+}
+function newNode(actor){ return { id:Date.now()+Math.floor(Math.random()*1000), actor:actor||'me', move:'', notes:'', children:[] }; }
+
+function startNewFlowchart(){
+  const fc=newFlowchart();
+  flowcharts=[fc,...flowcharts];
+  saveFlowcharts();
+  selectedFlowchartId=fc.id;
+  fcEditMode=true;
+  showView('flowchart-detail');
+}
+
+function renderFlowchartList(){
+  let html=`<p class="section-title">フローチャート (${flowcharts.length})</p>`;
+  html+=`<div style="font-size:12px;color:#aaa;margin-bottom:14px">ポジションを起点に、自分の動き・相手の動きで枝分かれさせて戦略を可視化できます</div>`;
+  if(!flowcharts.length){
+    html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🗺️</div><div style="color:#aaa;font-size:14px">右下の＋ボタンで<br>フローチャートを作成しましょう</div></div>`;
+  }
+  flowcharts.forEach(fc=>{
+    const nodeCount=countNodes(fc.nodes);
+    html+=`<div class="session-item" onclick="openFlowchart(${fc.id})">
+      <div class="flex-between">
+        <div>
+          <div class="session-type">${esc(fc.title||'（無題）')}</div>
+          ${fc.startPosition?`<div style="font-size:13px;color:#6ea88a;margin-top:3px">▶ ${esc(fc.startPosition)}</div>`:''}
+          <div style="font-size:12px;color:#aaa;margin-top:3px">${nodeCount}個の動き</div>
+        </div>
+        <span style="font-size:11px;color:#b07d3a">開く →</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('view-flowchart').innerHTML=html;
+}
+
+function countNodes(nodes){
+  let c=0;
+  (nodes||[]).forEach(n=>{ c++; c+=countNodes(n.children); });
+  return c;
+}
+
+function openFlowchart(id){ selectedFlowchartId=id; showView('flowchart-detail'); }
+function getFlowchart(){ return flowcharts.find(f=>f.id===selectedFlowchartId); }
+
+function findNode(nodes, id){
+  for(const n of nodes){
+    if(n.id===id) return n;
+    const found=findNode(n.children, id);
+    if(found) return found;
+  }
+  return null;
+}
+function findParentArray(nodes, id){
+  for(const n of nodes){
+    if(n.children.some(c=>c.id===id)) return n.children;
+    const found=findParentArray(n.children, id);
+    if(found) return found;
+  }
+  return null;
+}
+
+let fcEditMode = false;
+
+function renderFlowchartDetail(){
+  const fc=getFlowchart();
+  if(!fc){ showView('flowchart'); return; }
+  let html=`<div class="flex-row" style="margin-bottom:16px">
+    <button class="btn-secondary" onclick="showView('flowchart')">← 一覧</button>
+    <button class="btn-secondary ${fcEditMode?'accent':''}" onclick="toggleFcEdit()">${fcEditMode?'✓ 編集完了':'✏️ 編集'}</button>
+    <button class="btn-danger" onclick="deleteFlowchart(${fc.id})">削除</button>
+  </div>`;
+
+  if(fcEditMode){
+    // 編集モード：ツリー入力
+    html+=`<label class="lbl">タイトル</label>
+      <input type="text" id="fc-title" value="${esc(fc.title)}" placeholder="例: デラヒーバセットアップからスイープ" oninput="updateFlowchartField('title',this.value)" />
+      <label class="lbl">🟢 開始ポジション</label>
+      <input type="text" id="fc-start" value="${esc(fc.startPosition)}" placeholder="例: 片襟片袖グリップで相四つ" oninput="updateFlowchartField('startPosition',this.value)" />`;
+    html+=`<div class="divider"></div><p class="section-title">動きの流れ（編集）</p>`;
+    html+=`<div style="font-size:12px;color:#aaa;margin-bottom:12px">🟤 自分の動き ／ 🔵 相手の動き で枝分かれ</div>`;
+    if(fc.startPosition){
+      html+=`<div class="fc-node start"><span class="fc-actor-badge" style="background:#6ea88a;color:#fff">開始</span> <b>${esc(fc.startPosition)}</b></div>`;
+    }
+    html+=`<div id="fc-tree">${renderNodes(fc.nodes)}</div>`;
+    html+=`<div class="flex-row" style="margin-top:10px">
+      <button class="btn-secondary accent" onclick="addNode(null,'me')">＋ 自分の動き</button>
+      <button class="btn-secondary blue" onclick="addNode(null,'opp')">＋ 相手の動き</button>
+    </div>`;
+  } else {
+    // 表示モード：グラフ図
+    html+=`<div style="font-size:19px;font-weight:700;margin-bottom:4px">${esc(fc.title||'（無題）')}</div>`;
+    html+=`<div class="fc-legend">
+      <div class="fc-legend-item"><div class="fc-legend-dot" style="background:#6ea88a"></div>ポジション</div>
+      <div class="fc-legend-item"><div class="fc-legend-dot" style="background:#b07d3a"></div>自分</div>
+      <div class="fc-legend-item"><div class="fc-legend-dot" style="background:#6ea8c8"></div>相手</div>
+    </div>`;
+    if(!fc.startPosition && !fc.nodes.length){
+      html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🗺️</div><div style="color:#aaa;font-size:14px">「✏️ 編集」から<br>フローチャートを作成しましょう</div></div>`;
+    } else {
+      html+=renderFlowchartGraph(fc);
+    }
+  }
+  document.getElementById('view-flowchart-detail').innerHTML=html;
+  // グラフ表示モードならピンチズームをセットアップ
+  if(!fcEditMode && (fc.startPosition || fc.nodes.length)){
+    setTimeout(setupPinchZoom, 50);
+  }
+}
+
+function toggleFcEdit(){ fcEditMode=!fcEditMode; renderFlowchartDetail(); }
+
+// ── グラフ図の描画 ──
+function renderFlowchartGraph(fc){
+  // レイアウト計算：各ノードにx,y座標を割り当てる
+  const NODE_W=130, NODE_H=52, H_GAP=20, V_GAP=42;
+
+  // ルート（開始ポジション）を仮想ノードとして扱う
+  const root={ id:'__root__', actor:'pos', move:fc.startPosition||'開始', children:fc.nodes };
+
+  // 各サブツリーの幅を計算（葉の数ベース）
+  function calcWidth(node){
+    if(!node.children || !node.children.length){ node._w=NODE_W; return NODE_W; }
+    let total=0;
+    node.children.forEach(c=>{ total+=calcWidth(c); });
+    total+=(node.children.length-1)*H_GAP;
+    node._w=Math.max(NODE_W, total);
+    return node._w;
+  }
+  calcWidth(root);
+
+  // x,y座標を割り当て
+  const positioned=[];
+  function assign(node, xLeft, depth){
+    const y=depth*(NODE_H+V_GAP);
+    const cx=xLeft + node._w/2; // このサブツリーの中心
+    node._x=cx - NODE_W/2;
+    node._y=y;
+    positioned.push(node);
+    if(node.children && node.children.length){
+      let childX=xLeft;
+      // 子の合計幅がサブツリー幅より小さい場合は中央寄せ
+      let childrenTotal=0;
+      node.children.forEach(c=>{ childrenTotal+=c._w; });
+      childrenTotal+=(node.children.length-1)*H_GAP;
+      childX = cx - childrenTotal/2;
+      node.children.forEach(c=>{
+        assign(c, childX, depth+1);
+        childX += c._w + H_GAP;
+      });
+    }
+  }
+  assign(root, 0, 0);
+
+  // 全体サイズ
+  let maxX=0, maxY=0;
+  positioned.forEach(n=>{ maxX=Math.max(maxX, n._x+NODE_W); maxY=Math.max(maxY, n._y+NODE_H); });
+  const totalW=maxX+20, totalH=maxY+20;
+
+  // SVGの線
+  let lines='';
+  positioned.forEach(n=>{
+    if(n.children){
+      n.children.forEach(c=>{
+        const x1=n._x+NODE_W/2, y1=n._y+NODE_H;
+        const x2=c._x+NODE_W/2, y2=c._y;
+        const midY=(y1+y2)/2;
+        const color=c.actor==='me'?'#b07d3a':'#6ea8c8';
+        lines+=`<path d="M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}" stroke="${color}" stroke-width="2.5" fill="none" opacity="0.85"/>`;
+        // 矢印
+        lines+=`<polygon points="${x2-4},${y2-6} ${x2+4},${y2-6} ${x2},${y2}" fill="${color}" opacity="1"/>`;
+      });
+    }
+  });
+
+  // ノードのHTML（絶対配置）
+  let nodesHtml='';
+  positioned.forEach(n=>{
+    let cls, label;
+    if(n.id==='__root__'){ cls='fc-gn-pos'; label='◇ ポジション'; }
+    else if(n.actor==='me'){ cls='fc-gn-me'; label='🡅 自分'; }
+    else { cls='fc-gn-opp'; label='🡇 相手'; }
+    nodesHtml+=`<div class="fc-graph-node ${cls}" style="left:${n._x}px;top:${n._y}px;width:${NODE_W}px;min-height:${NODE_H}px">
+      <div class="fc-nlabel">${label}</div>
+      <div style="font-weight:600;line-height:1.25">${esc(n.move||'（未入力）')}</div>
+    </div>`;
+  });
+
+  return `<div class="fc-canvas-wrap" id="fc-canvas">
+    <div class="fc-canvas-inner" id="fc-canvas-inner" style="width:${totalW}px;height:${totalH}px">
+      <svg style="position:absolute;top:0;left:0;width:${totalW}px;height:${totalH}px;pointer-events:none">${lines}</svg>
+      ${nodesHtml}
+    </div>
+  </div>
+  <div style="font-size:12px;color:#aaa;text-align:center">2本指でピンチ拡大縮小 · 1本指でドラッグ移動</div>`;
+}
+
+// ピンチズーム＆パンのセットアップ
+let fcZoom={ scale:1, tx:20, ty:20 };
+function setupPinchZoom(){
+  const canvas=document.getElementById('fc-canvas');
+  const inner=document.getElementById('fc-canvas-inner');
+  if(!canvas || !inner) return;
+
+  // 初期表示：全体が収まるように自動フィット
+  const cw=canvas.clientWidth, ch=canvas.clientHeight;
+  const iw=inner.offsetWidth, ih=inner.offsetHeight;
+  const fitScale=Math.min(cw/(iw+40), ch/(ih+40), 1);
+  fcZoom={ scale:fitScale, tx:(cw-iw*fitScale)/2, ty:20 };
+  applyZoom();
+
+  let startDist=0, startScale=1;
+  let startX=0, startY=0, startTx=0, startTy=0;
+  let mode=null; // 'pan' | 'pinch'
+  let midStart={x:0,y:0};
+
+  function dist(t1,t2){ return Math.hypot(t1.clientX-t2.clientX, t1.clientY-t2.clientY); }
+
+  canvas.ontouchstart=(e)=>{
+    if(e.touches.length===2){
+      mode='pinch';
+      startDist=dist(e.touches[0],e.touches[1]);
+      startScale=fcZoom.scale;
+      const rect=canvas.getBoundingClientRect();
+      midStart={ x:(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left, y:(e.touches[0].clientY+e.touches[1].clientY)/2-rect.top };
+      // ピンチ中心のcanvas内座標を基準に
+      startTx=fcZoom.tx; startTy=fcZoom.ty;
+    } else if(e.touches.length===1){
+      mode='pan';
+      startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+      startTx=fcZoom.tx; startTy=fcZoom.ty;
+    }
+  };
+  canvas.ontouchmove=(e)=>{
+    e.preventDefault();
+    if(mode==='pinch' && e.touches.length===2){
+      const d=dist(e.touches[0],e.touches[1]);
+      let newScale=startScale*(d/startDist);
+      newScale=Math.max(0.2, Math.min(3, newScale));
+      // ピンチ中心を固定してズーム
+      const ratio=newScale/startScale;
+      fcZoom.tx = midStart.x - (midStart.x - startTx)*ratio;
+      fcZoom.ty = midStart.y - (midStart.y - startTy)*ratio;
+      fcZoom.scale=newScale;
+      applyZoom();
+    } else if(mode==='pan' && e.touches.length===1){
+      fcZoom.tx = startTx + (e.touches[0].clientX-startX);
+      fcZoom.ty = startTy + (e.touches[0].clientY-startY);
+      applyZoom();
+    }
+  };
+  canvas.ontouchend=(e)=>{
+    if(e.touches.length===0) mode=null;
+    else if(e.touches.length===1){ mode='pan'; startX=e.touches[0].clientX; startY=e.touches[0].clientY; startTx=fcZoom.tx; startTy=fcZoom.ty; }
+  };
+}
+
+function applyZoom(){
+  const inner=document.getElementById('fc-canvas-inner');
+  if(inner) inner.style.transform=`translate(${fcZoom.tx}px,${fcZoom.ty}px) scale(${fcZoom.scale})`;
+}
+
+function renderNodes(nodes){
+  if(!nodes || !nodes.length) return '';
+  let html='';
+  nodes.forEach(n=>{
+    const actorClass=n.actor==='me'?'me':'opp';
+    const actorBadge=n.actor==='me'?'<span class="fc-actor-badge fc-actor-me">自分</span>':'<span class="fc-actor-badge fc-actor-opp">相手</span>';
+    html+=`<div class="fc-node ${actorClass}">
+      <div style="margin-bottom:6px">${actorBadge}</div>
+      <input type="text" value="${esc(n.move)}" placeholder="動き・技（例: 腕を差し込む）" oninput="updateNode(${n.id},'move',this.value)" style="font-size:14px;margin-bottom:4px" />
+      <input type="text" value="${esc(n.notes)}" placeholder="メモ（任意）" oninput="updateNode(${n.id},'notes',this.value)" style="font-size:13px;color:#666" />
+      <div class="flex-row" style="margin-top:8px;gap:6px">
+        <button class="btn-secondary btn-sm accent" onclick="addNode(${n.id},'me')">＋自分</button>
+        <button class="btn-secondary btn-sm blue" onclick="addNode(${n.id},'opp')">＋相手</button>
+        <button class="btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteNode(${n.id})">削除</button>
+      </div>
+      ${n.children && n.children.length?`<div class="fc-children">${renderNodes(n.children)}</div>`:''}
+    </div>`;
+  });
+  return html;
+}
+
+function updateFlowchartField(field, value){
+  const fc=getFlowchart(); if(!fc) return;
+  fc[field]=value;
+  saveFlowcharts();
+}
+function updateNode(nodeId, field, value){
+  const fc=getFlowchart(); if(!fc) return;
+  const node=findNode(fc.nodes, nodeId);
+  if(node){ node[field]=value; saveFlowcharts(); }
+}
+function addNode(parentId, actor){
+  const fc=getFlowchart(); if(!fc) return;
+  const node=newNode(actor);
+  if(parentId===null){ fc.nodes.push(node); }
+  else { const parent=findNode(fc.nodes, parentId); if(parent) parent.children.push(node); }
+  saveFlowcharts();
+  renderFlowchartDetail();
+}
+function deleteNode(nodeId){
+  const fc=getFlowchart(); if(!fc) return;
+  if(!confirm('この動き（以下の枝も含む）を削除しますか？')) return;
+  const rootIdx=fc.nodes.findIndex(n=>n.id===nodeId);
+  if(rootIdx>=0){ fc.nodes.splice(rootIdx,1); }
+  else { const arr=findParentArray(fc.nodes, nodeId); if(arr){ const i=arr.findIndex(n=>n.id===nodeId); if(i>=0) arr.splice(i,1); } }
+  saveFlowcharts();
+  renderFlowchartDetail();
+}
+function deleteFlowchart(id){
+  if(!confirm('このフローチャートを削除しますか？')) return;
+  flowcharts=flowcharts.filter(f=>f.id!==id);
+  saveFlowcharts();
+  showView('flowchart');
+}
+
 
 render();
 </script>
