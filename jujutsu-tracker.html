@@ -59,7 +59,7 @@
     .goal-box.green { background: #6ea88a0d; border: 1px solid #6ea88a2a; }
     .goal-box.blue { background: #6ea8c80d; border: 1px solid #6ea8c82a; }
     .detail-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #aaa; margin-bottom: 4px; }
-    .detail-value { font-size: 14px; color: #1a1a1a; line-height: 1.5; }
+    .detail-value { font-size: 14px; color: #1a1a1a; line-height: 1.5; white-space: pre-wrap; }
     .divider { border-top: 1px solid #ececec; margin: 16px 0; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -81,7 +81,7 @@
     /* 動画メモ */
     .vmemo-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
     .vmemo-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
-    .vmemo-note { font-size: 13px; color: #666; margin-top: 6px; line-height: 1.5; }
+    .vmemo-note { font-size: 13px; color: #666; margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
     /* フローチャート（グラフ図） */
     .fc-canvas-wrap { background: #faf8f5; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; margin-bottom: 12px; height: 480px; position: relative; touch-action: none; }
     .fc-canvas-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
@@ -161,6 +161,20 @@ function load() {
   try { const s = localStorage.getItem(STORAGE_KEY); if(s) sessions=JSON.parse(s); } catch{}
   try { const v = localStorage.getItem(VMEMO_KEY);   if(v) vmemos=JSON.parse(v);   } catch{}
   try { const fc = localStorage.getItem(FLOWCHART_KEY); if(fc) flowcharts=JSON.parse(fc); } catch{}
+  // 既存データに紛れ込んだ<br>を改行に戻す（1回限りのクリーンアップ）
+  cleanBrTags();
+}
+function cleanBrTags(){
+  const fix=(v)=> typeof v==='string' ? v.replace(/<br\s*\/?>/gi, '\n') : v;
+  let changed=false;
+  sessions.forEach(s=>{
+    ['goal','preCondition','preInjuries','content','sparringNotes','corrections','reinforcements','nextGoal','injuries'].forEach(k=>{
+      if(typeof s[k]==='string' && /<br/i.test(s[k])){ s[k]=fix(s[k]); changed=true; }
+    });
+    (s.techniques||[]).forEach(t=>{ if(typeof t.notes==='string' && /<br/i.test(t.notes)){ t.notes=fix(t.notes); changed=true; } });
+  });
+  vmemos.forEach(v=>{ if(typeof v.note==='string' && /<br/i.test(v.note)){ v.note=fix(v.note); changed=true; } });
+  if(changed){ save(); saveVmemos(); }
 }
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions)); } catch{}
@@ -209,7 +223,8 @@ function render() {
 
 function badge(text,cls){ return `<span class="badge ${cls}">${text}</span>`; }
 function goalBox(label,text,cls){ if(!text) return ''; return `<div class="goal-box ${cls}"><div class="detail-label">${label}</div><div class="detail-value">${esc(text)}</div></div>`; }
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escBr(s){ return esc(s).replace(/\n/g,'<br>'); }
 
 function getEmbedHtml(url) {
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
