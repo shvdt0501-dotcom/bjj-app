@@ -669,12 +669,12 @@ function renderDetail(){
     if(s.content) html+=`<div style="margin-bottom:12px"><div class="detail-label">${t('content_label')}</div><div class="detail-value">${esc(s.content)}</div></div>`;
     if((s.techniques||[]).length){
       html+=`<div class="detail-label">${t('techniques_label')}</div>`;
-      s.techniques.forEach(t=>{
-        html+=`<div class="card" style="margin-bottom:6px;cursor:pointer" onclick="openTechDetail('${esc(t.name)}')">
-          <div style="font-weight:600">${esc(t.name)} <span style="font-size:11px;color:#b07d3a">${t('view_in_library')}</span></div>
-          ${t.position?`<div style="font-size:12px;color:#aaa">${esc(t.position)}</div>`:''}
-          ${t.notes?`<div style="font-size:13px;color:#888;margin-top:4px">${esc(t.notes)}</div>`:''}
-          ${(t.videoUrls||[]).map(u=>{ const e=getEmbedHtml(u); return e||`<a class="video-link" href="${esc(u)}" target="_blank">${esc(u)}</a>`; }).join('')}
+      s.techniques.forEach(tk=>{
+        html+=`<div class="card" style="margin-bottom:6px;cursor:pointer" onclick="openTechDetail('${esc(tk.name)}')">
+          <div style="font-weight:600">${esc(tk.name)} <span style="font-size:11px;color:#b07d3a">${t('view_in_library')}</span></div>
+          ${tk.position?`<div style="font-size:12px;color:#aaa">${esc(tk.position)}</div>`:''}
+          ${tk.notes?`<div style="font-size:13px;color:#888;margin-top:4px">${esc(tk.notes)}</div>`:''}
+          ${(tk.videoUrls||[]).map(u=>{ const e=getEmbedHtml(u); return e||`<a class="video-link" href="${esc(u)}" target="_blank">${esc(u)}</a>`; }).join('')}
         </div>`;
       });
     }
@@ -994,8 +994,18 @@ function removeTechVideoUrl(i,j){
   form.techniques[i].videoUrls=(form.techniques[i].videoUrls||[]).filter((_,k)=>k!==j);
   const el=document.getElementById(`tech-video-list-${i}`); if(el) el.innerHTML=renderTechVideoUrls(i);
 }
-function addTechnique(){ form.techniques=[...(form.techniques||[]),{id:Date.now(),name:'',position:'',notes:'',videoUrls:[]}]; const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
-function removeTechnique(i){ form.techniques=(form.techniques||[]).filter((_,j)=>j!==i); const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
+function syncTechInputsFromDOM(){
+  (form.techniques||[]).forEach((tk,i)=>{
+    const nameEl=document.getElementById('tech-name-'+i);
+    const posEl=document.getElementById('tech-pos-'+i);
+    const notesEl=document.getElementById('tech-notes-'+i);
+    if(nameEl) tk.name=nameEl.value;
+    if(posEl) tk.position=posEl.value;
+    if(notesEl) tk.notes=notesEl.value;
+  });
+}
+function addTechnique(){ syncTechInputsFromDOM(); form.techniques=[...(form.techniques||[]),{id:Date.now(),name:'',position:'',notes:'',videoUrls:[]}]; const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
+function removeTechnique(i){ syncTechInputsFromDOM(); form.techniques=(form.techniques||[]).filter((_,j)=>j!==i); const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
 
 function renderRating(){ return RATING_LABELS_().map((l,i)=>`<button class="rating-btn${form.rating===i+1?' active':''}" onclick="setRating(${i+1})">${esc(l)}</button>`).join(''); }
 function setRating(r){ form.rating=r; const el=document.getElementById('rating-row'); if(el) el.innerHTML=renderRating(); }
