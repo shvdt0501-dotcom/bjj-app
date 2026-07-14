@@ -135,8 +135,7 @@
     </div>
     <div style="display:flex;gap:6px;margin-top:4px">
       <button onclick="openSearch()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">🔍</button>
-      <button onclick="openImport()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">📥</button>
-      <button onclick="openLangModal()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">🌐</button>
+      <button onclick="openSettings()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">⚙️</button>
     </div>
   </div>
   <nav id="main-nav">
@@ -241,6 +240,12 @@ const I18N = {
     confirm_delete_flowchart:'このフローチャートを削除しますか？', confirm_delete_node:'この動き（以下の枝も含む）を削除しますか？',
     alert_url_title:'URLかタイトルを入力してください',
     lang_label:'言語 / Language', copy_url:'URLをコピー', partner_placeholder:'例: 山田先生',
+    settings_title:'設定', backup_title:'バックアップ', backup_hint:'すべてのデータをファイルに保存します。機種変更や将来のアプリ移行に使えます。',
+    backup_export:'📤 データを書き出す', backup_import:'📥 データを読み込む',
+    backup_export_done:'データを書き出しました', backup_import_confirm:'現在のデータは上書きされます。読み込みますか？',
+    backup_import_done:'データを読み込みました', backup_import_error:'ファイルの読み込みに失敗しました',
+    backup_stats:'記録: {r}件 / 動画: {v}件 / フローチャート: {f}件',
+    backup_warning:'⚠️ このデータはブラウザ内にのみ保存されています。定期的にバックアップを取ることをおすすめします。',
     import_title:'メモをインポート', import_hint:'メモやLINEに書いた練習記録を貼り付けてください。日付が見つかれば自動で分割します。',
     import_placeholder:'7/10 スパーリング 60分\nアームバー練習した\n調子良かった\n\n7/12 クラス\nデラヒーバの入り方を教わった',
     import_analyze:'解析する', import_confirm:'取り込む', import_found:'件の記録が見つかりました',
@@ -317,6 +322,12 @@ const I18N = {
     confirm_delete_flowchart:'Delete this flowchart?', confirm_delete_node:'Delete this move (and its branches)?',
     alert_url_title:'Please enter a URL or title',
     lang_label:'言語 / Language', copy_url:'Copy URL', partner_placeholder:'e.g. Coach Yamada',
+    settings_title:'Settings', backup_title:'Backup', backup_hint:'Save all your data to a file. Useful for device changes or future app migration.',
+    backup_export:'📤 Export data', backup_import:'📥 Import data',
+    backup_export_done:'Data exported', backup_import_confirm:'Current data will be overwritten. Continue?',
+    backup_import_done:'Data imported', backup_import_error:'Failed to read file',
+    backup_stats:'Records: {r} / Videos: {v} / Flowcharts: {f}',
+    backup_warning:'⚠️ Your data is stored only in this browser. We recommend backing up regularly.',
     import_title:'Import notes', import_hint:'Paste training notes from your memo app or LINE. Records are split automatically if dates are found.',
     import_placeholder:'7/10 Sparring 60min\nDrilled armbar\nFelt good\n\n7/12 Class\nLearned De la Riva entry',
     import_analyze:'Analyze', import_confirm:'Import', import_found:'records found',
@@ -393,6 +404,12 @@ const I18N = {
     confirm_delete_flowchart:'Excluir este fluxograma?', confirm_delete_node:'Excluir este movimento (e seus ramos)?',
     alert_url_title:'Insira uma URL ou título',
     lang_label:'言語 / Language', copy_url:'Copiar URL', partner_placeholder:'ex: Prof. Silva',
+    settings_title:'Configurações', backup_title:'Backup', backup_hint:'Salve todos os seus dados em um arquivo. Útil para troca de aparelho ou migração futura.',
+    backup_export:'📤 Exportar dados', backup_import:'📥 Importar dados',
+    backup_export_done:'Dados exportados', backup_import_confirm:'Os dados atuais serão substituídos. Continuar?',
+    backup_import_done:'Dados importados', backup_import_error:'Falha ao ler o arquivo',
+    backup_stats:'Registros: {r} / Vídeos: {v} / Fluxogramas: {f}',
+    backup_warning:'⚠️ Seus dados são salvos apenas neste navegador. Recomendamos fazer backup regularmente.',
     import_title:'Importar notas', import_hint:'Cole suas notas de treino do app de notas ou WhatsApp. Os registros são divididos automaticamente se houver datas.',
     import_placeholder:'10/7 Sparring 60min\nTreinei armlock\nMe senti bem\n\n12/7 Aula\nAprendi entrada de De la Riva',
     import_analyze:'Analisar', import_confirm:'Importar', import_found:'registros encontrados',
@@ -414,7 +431,10 @@ function setLang(lang){
   localStorage.setItem('bjj_lang', lang);
   applyStaticLabels();
   render();
-  closeModal();
+  // 設定モーダルが開いていれば再描画して開いたままにする
+  const modal=document.getElementById('modal-bg');
+  if(modal && !modal.classList.contains('hidden')) openSettings();
+  else closeModal();
 }
 function applyStaticLabels(){
   document.getElementById('nav-dashboard').textContent=t('nav_home');
@@ -1796,7 +1816,8 @@ function openImport(){
 function renderImport(){
   let html='';
   if(importStep==='input'){
-    html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    html=`<button class="btn-secondary" style="margin-bottom:14px" onclick="showView('dashboard')">← ${t('import_back')}</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:19px;font-weight:700">${t('import_title')}</div>
     </div>
     <div style="font-size:13px;color:#aaa;margin-bottom:6px;line-height:1.5">${t('import_hint')}</div>
@@ -1950,6 +1971,99 @@ function confirmImport(){
   alert(`${count} ${t('import_done')}`);
   importText=''; importParsed=[]; importStep='input';
   showView('list');
+}
+
+
+
+// ── SETTINGS & BACKUP ──
+function openSettings(){
+  const r=sessions.length, v=vmemos.length, f=flowcharts.length;
+  const statsLine=t('backup_stats').replace('{r}',r).replace('{v}',v).replace('{f}',f);
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-title">${t('settings_title')}</div>
+
+    <div style="margin-top:18px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">${t('lang_label')}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
+        <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
+        <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #ececec;margin:18px 0"></div>
+
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('import_title')}</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px;line-height:1.5">${t('import_hint')}</div>
+      <button class="btn-secondary" style="width:100%" onclick="closeModal(); openImport();">📝 ${t('import_title')}</button>
+    </div>
+
+    <div style="border-top:1px solid #ececec;margin:18px 0"></div>
+
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('backup_title')}</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:8px;line-height:1.5">${t('backup_hint')}</div>
+      <div style="background:#fff9ec;border:1px solid #c8a05a44;border-radius:6px;padding:10px;font-size:12px;color:#8a6d3b;margin-bottom:12px;line-height:1.5">${t('backup_warning')}</div>
+      <div style="font-size:12px;color:#666;margin-bottom:10px">${statsLine}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn-primary" onclick="exportData()">${t('backup_export')}</button>
+        <button class="btn-secondary" onclick="document.getElementById('import-file').click()">${t('backup_import')}</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)" />
+      </div>
+    </div>
+
+    <div style="margin-top:18px"><button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button></div>`;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+function exportData(){
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    lang: currentLang,
+    sessions: sessions,
+    vmemos: vmemos,
+    flowcharts: flowcharts,
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `bjj-log-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert(t('backup_export_done'));
+}
+
+function importData(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data || (!data.sessions && !data.vmemos && !data.flowcharts)) throw new Error('invalid');
+      if(!confirm(t('backup_import_confirm'))) { input.value=''; return; }
+      sessions   = Array.isArray(data.sessions)   ? data.sessions   : [];
+      vmemos     = Array.isArray(data.vmemos)     ? data.vmemos     : [];
+      flowcharts = Array.isArray(data.flowcharts) ? data.flowcharts : [];
+      save(); saveVmemos(); saveFlowcharts();
+      cleanBrTags();
+      alert(t('backup_import_done'));
+      closeModal();
+      showView('dashboard');
+    } catch(err) {
+      alert(t('backup_import_error'));
+    }
+    input.value='';
+  };
+  reader.onerror = ()=>{ alert(t('backup_import_error')); input.value=''; };
+  reader.readAsText(file);
 }
 
 
