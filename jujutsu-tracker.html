@@ -116,6 +116,13 @@
     .rank-bar-fill { background: linear-gradient(90deg,#b07d3a,#c8a05a); height: 100%; border-radius: 4px; }
     .rank-label { position: absolute; left: 8px; top: 0; height: 24px; display: flex; align-items: center; font-size: 12px; color: #1a1a1a; font-weight: 600; }
     .rank-count { position: absolute; right: 8px; top: 0; height: 24px; display: flex; align-items: center; font-size: 11px; color: #666; }
+    /* 検索 */
+    .search-box { position: sticky; top: 0; background: #f5f5f5; padding-bottom: 12px; z-index: 10; }
+    .search-input { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid #e0e0e0; border-radius: 24px; outline: none; background: #fff; }
+    .search-input:focus { border-color: #b07d3a; }
+    .search-group { margin-bottom: 18px; }
+    .search-count { font-size: 11px; color: #aaa; margin-left: 6px; font-weight: 400; }
+    mark { background: #b07d3a33; color: #1a1a1a; padding: 0 2px; border-radius: 2px; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -126,7 +133,11 @@
       <div class="logo">BJJ</div>
       <h1>BJJ Log</h1>
     </div>
-    <button onclick="openLangModal()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666;margin-top:4px">🌐</button>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button onclick="openSearch()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">🔍</button>
+      <button onclick="openImport()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">📥</button>
+      <button onclick="openLangModal()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">🌐</button>
+    </div>
   </div>
   <nav id="main-nav">
     <button id="nav-dashboard" class="active" onclick="showView('dashboard')">ホーム</button>
@@ -147,6 +158,8 @@
 <div id="view-flowchart" class="page hidden"></div>
 <div id="view-flowchart-detail" class="page hidden"></div>
 <div id="view-stats" class="page hidden"></div>
+<div id="view-search" class="page hidden"></div>
+<div id="view-import" class="page hidden"></div>
 <button id="fab" onclick="onFab()">＋</button>
 <div id="modal-bg" class="hidden"><div id="modal-box"></div></div>
 
@@ -228,6 +241,14 @@ const I18N = {
     confirm_delete_flowchart:'このフローチャートを削除しますか？', confirm_delete_node:'この動き（以下の枝も含む）を削除しますか？',
     alert_url_title:'URLかタイトルを入力してください',
     lang_label:'言語 / Language', copy_url:'URLをコピー', partner_placeholder:'例: 山田先生',
+    import_title:'メモをインポート', import_hint:'メモやLINEに書いた練習記録を貼り付けてください。日付が見つかれば自動で分割します。',
+    import_placeholder:'7/10 スパーリング 60分\nアームバー練習した\n調子良かった\n\n7/12 クラス\nデラヒーバの入り方を教わった',
+    import_analyze:'解析する', import_confirm:'取り込む', import_found:'件の記録が見つかりました',
+    import_no_date:'日付が見つかりません', import_set_date:'日付を選択', import_preview:'プレビュー',
+    import_empty:'テキストを貼り付けてください', import_done:'件の記録を取り込みました', import_back:'戻る',
+    import_split_hint:'空行で区切ると複数の記録として取り込めます', import_content_label:'内容',
+    search_title:'検索', search_placeholder:'技名・メモ・目標などで検索', search_no_result:'該当する結果がありません', search_hint:'キーワードを入力してください',
+    search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
     nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
     stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
     stats_by_tech:'技ランキング', stats_by_position:'ポジション別', stats_hours:'時間', stats_no_data:'データがありません', stats_avg_condition:'平均コンディション',
@@ -296,6 +317,14 @@ const I18N = {
     confirm_delete_flowchart:'Delete this flowchart?', confirm_delete_node:'Delete this move (and its branches)?',
     alert_url_title:'Please enter a URL or title',
     lang_label:'言語 / Language', copy_url:'Copy URL', partner_placeholder:'e.g. Coach Yamada',
+    import_title:'Import notes', import_hint:'Paste training notes from your memo app or LINE. Records are split automatically if dates are found.',
+    import_placeholder:'7/10 Sparring 60min\nDrilled armbar\nFelt good\n\n7/12 Class\nLearned De la Riva entry',
+    import_analyze:'Analyze', import_confirm:'Import', import_found:'records found',
+    import_no_date:'No date found', import_set_date:'Select date', import_preview:'Preview',
+    import_empty:'Please paste some text', import_done:'records imported', import_back:'Back',
+    import_split_hint:'Separate records with a blank line', import_content_label:'Content',
+    search_title:'Search', search_placeholder:'Search by technique, notes, goals...', search_no_result:'No matching results', search_hint:'Enter a keyword',
+    search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
     nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
     stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
     stats_by_tech:'Technique ranking', stats_by_position:'By position', stats_hours:'hrs', stats_no_data:'No data', stats_avg_condition:'Avg condition',
@@ -364,6 +393,14 @@ const I18N = {
     confirm_delete_flowchart:'Excluir este fluxograma?', confirm_delete_node:'Excluir este movimento (e seus ramos)?',
     alert_url_title:'Insira uma URL ou título',
     lang_label:'言語 / Language', copy_url:'Copiar URL', partner_placeholder:'ex: Prof. Silva',
+    import_title:'Importar notas', import_hint:'Cole suas notas de treino do app de notas ou WhatsApp. Os registros são divididos automaticamente se houver datas.',
+    import_placeholder:'10/7 Sparring 60min\nTreinei armlock\nMe senti bem\n\n12/7 Aula\nAprendi entrada de De la Riva',
+    import_analyze:'Analisar', import_confirm:'Importar', import_found:'registros encontrados',
+    import_no_date:'Data não encontrada', import_set_date:'Selecionar data', import_preview:'Prévia',
+    import_empty:'Cole algum texto', import_done:'registros importados', import_back:'Voltar',
+    import_split_hint:'Separe os registros com uma linha em branco', import_content_label:'Conteúdo',
+    search_title:'Buscar', search_placeholder:'Buscar por técnica, notas, metas...', search_no_result:'Nenhum resultado encontrado', search_hint:'Digite uma palavra-chave',
+    search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
     nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
     stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
     stats_by_tech:'Ranking de técnicas', stats_by_position:'Por posição', stats_hours:'h', stats_no_data:'Sem dados', stats_avg_condition:'Condição média',
@@ -456,13 +493,13 @@ function saveFlowcharts() {
 load();
 
 // ── ナビ ──
-const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','stats'];
+const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','stats','search','import'];
 function showView(v) {
   ALL_VIEWS.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x!==v));
   const nav = document.getElementById('main-nav');
   const fab = document.getElementById('fab');
   if (v==='form') { nav.classList.add('hidden'); fab.classList.add('hidden'); }
-  else if (v==='stats') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
+  else if (v==='stats' || v==='search' || v==='import') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
   else { nav.classList.remove('hidden'); fab.classList.remove('hidden'); }
   ['dashboard','list','library','videos','flowchart','stats'].forEach(x => {
     const btn = document.getElementById('nav-'+x);
@@ -489,6 +526,8 @@ function render() {
   if(currentView==='flowchart')   renderFlowchartList();
   if(currentView==='flowchart-detail') renderFlowchartDetail();
   if(currentView==='stats') renderStats();
+  if(currentView==='search') renderSearch();
+  if(currentView==='import') renderImport();
 }
 
 function badge(text,cls){ return `<span class="badge ${cls}">${text}</span>`; }
@@ -1585,6 +1624,332 @@ function donutSvg(entries, total, colors){
     offset+=len;
   });
   return `<svg viewBox="0 0 ${size} ${size}" style="width:180px;height:180px;display:block;margin:0 auto">${arcs}<text x="${cx}" y="${cy-4}" font-size="26" font-weight="700" fill="#1a1a1a" text-anchor="middle">${total}</text><text x="${cx}" y="${cy+16}" font-size="11" fill="#aaa" text-anchor="middle">sessions</text></svg>`;
+}
+
+
+
+// ── SEARCH（横断検索） ──
+let searchQuery = '';
+
+function openSearch(){
+  searchQuery='';
+  showView('search');
+  setTimeout(()=>{ const el=document.getElementById('search-input'); if(el) el.focus(); }, 100);
+}
+
+function onSearchInput(v){
+  searchQuery=v;
+  renderSearchResults();
+}
+
+function renderSearch(){
+  let html=`<div class="search-box">
+    <input type="text" id="search-input" class="search-input" placeholder="${t('search_placeholder')}" value="${esc(searchQuery)}" oninput="onSearchInput(this.value)" />
+  </div>
+  <div id="search-results"></div>`;
+  document.getElementById('view-search').innerHTML=html;
+  renderSearchResults();
+}
+
+function hl(text, q){
+  if(!q) return esc(text);
+  const escaped=esc(text);
+  try {
+    const re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    return escaped.replace(re,'<mark>$1</mark>');
+  } catch { return escaped; }
+}
+
+function matches(text, q){
+  if(!text) return false;
+  return String(text).toLowerCase().includes(q.toLowerCase());
+}
+
+function renderSearchResults(){
+  const el=document.getElementById('search-results');
+  if(!el) return;
+  const q=searchQuery.trim();
+  if(!q){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">🔍<br><br>${t('search_hint')}</div>`;
+    return;
+  }
+
+  // 1. 練習記録を検索（目標・内容・メモ・振り返り・相手・種別・タグ）
+  const recHits = sessions.filter(s=>
+    matches(s.goal,q) || matches(s.content,q) || matches(s.sparringNotes,q) ||
+    matches(s.corrections,q) || matches(s.reinforcements,q) || matches(s.nextGoal,q) ||
+    matches(s.preCondition,q) || matches(s.preInjuries,q) || matches(s.injuries,q) ||
+    matches(s.partner,q) || matches(s.type,q) || matches(s.date,q) ||
+    (s.tags||[]).some(tg=>matches(tg,q)) ||
+    (s.techniques||[]).some(tk=>matches(tk.name,q)||matches(tk.notes,q)||matches(tk.position,q))
+  );
+
+  // 2. 技を検索（技ライブラリ相当）
+  const techMap={};
+  sessions.forEach(s=>{
+    (s.techniques||[]).forEach(tk=>{
+      if(!tk.name) return;
+      if(matches(tk.name,q)||matches(tk.notes,q)||matches(tk.position,q)){
+        if(!techMap[tk.name]) techMap[tk.name]={name:tk.name,count:0};
+        techMap[tk.name].count++;
+      }
+    });
+  });
+  const techHits=Object.values(techMap).sort((a,b)=>b.count-a.count);
+
+  // 3. 動画メモを検索
+  const vidHits = vmemos.filter(v=>
+    matches(v.title,q)||matches(v.note,q)||matches(v.category,q)||matches(v.url,q)
+  );
+
+  // 4. フローチャートを検索（タイトル・開始ポジション・ノード）
+  function nodeMatches(nodes){
+    return (nodes||[]).some(n=> matches(n.move,q)||matches(n.notes,q)||nodeMatches(n.children));
+  }
+  const fcHits = flowcharts.filter(fc=>
+    matches(fc.title,q)||matches(fc.startPosition,q)||nodeMatches(fc.nodes)
+  );
+
+  const total = recHits.length + techHits.length + vidHits.length + fcHits.length;
+  if(total===0){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">${t('search_no_result')}</div>`;
+    return;
+  }
+
+  let html=`<div style="font-size:12px;color:#aaa;margin-bottom:14px">${total} ${t('search_results')}</div>`;
+
+  // 練習記録
+  if(recHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_records')}<span class="search-count">${recHits.length}</span></p>`;
+    recHits.forEach(s=>{
+      // ヒットしたスニペットを探す
+      let snippet='';
+      const fields=[s.goal,s.content,s.sparringNotes,s.corrections,s.reinforcements,s.nextGoal];
+      for(const f of fields){ if(matches(f,q)){ snippet=f; break; } }
+      if(!snippet){
+        const tk=(s.techniques||[]).find(x=>matches(x.name,q)||matches(x.notes,q));
+        if(tk) snippet=tk.name+(tk.notes?' — '+tk.notes:'');
+      }
+      html+=`<div class="session-item" onclick="openDetail(${s.id})">
+        <div class="session-date">${esc(s.date)}</div>
+        <div class="session-type">${hl(s.type||'',q)} <span class="session-meta">— ${s.duration}min</span></div>
+        ${snippet?`<div style="font-size:13px;color:#666;margin-top:5px;line-height:1.4">${hl(snippet.slice(0,90),q)}${snippet.length>90?'…':''}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // 技
+  if(techHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_techniques')}<span class="search-count">${techHits.length}</span></p>`;
+    techHits.forEach(tv=>{
+      html+=`<div class="tech-item" onclick="openTechDetail('${esc(tv.name)}')">
+        <div class="flex-between">
+          <div><div class="tech-name">${hl(tv.name,q)}</div><div class="tech-count">${tv.count}${t('times_practiced')}</div></div>
+          <span style="font-size:11px;color:#b07d3a">${t('open')}</span>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // 動画メモ
+  if(vidHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_videos')}<span class="search-count">${vidHits.length}</span></p>`;
+    vidHits.forEach(v=>{
+      html+=`<div class="session-item" onclick="showView('videos')">
+        <div class="session-type">${hl(v.title||v.url||'',q)}</div>
+        ${v.category?`<div style="margin-top:4px">${badge(hl(v.category,q),'badge-purple')}</div>`:''}
+        ${v.note&&matches(v.note,q)?`<div style="font-size:13px;color:#666;margin-top:5px">${hl(v.note.slice(0,90),q)}${v.note.length>90?'…':''}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // フローチャート
+  if(fcHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_flowcharts')}<span class="search-count">${fcHits.length}</span></p>`;
+    fcHits.forEach(fc=>{
+      html+=`<div class="session-item" onclick="openFlowchart(${fc.id})">
+        <div class="session-type">${hl(fc.title||t('untitled'),q)}</div>
+        ${fc.startPosition?`<div style="font-size:13px;color:#6ea88a;margin-top:3px">▶ ${hl(fc.startPosition,q)}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  el.innerHTML=html;
+}
+
+
+
+// ── IMPORT（メモのコピペ取り込み） ──
+let importText = '';
+let importParsed = [];   // [{date, content, duration, type}]
+let importStep = 'input'; // input | preview
+
+function openImport(){
+  importText=''; importParsed=[]; importStep='input';
+  showView('import');
+}
+
+function renderImport(){
+  let html='';
+  if(importStep==='input'){
+    html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:19px;font-weight:700">${t('import_title')}</div>
+    </div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:6px;line-height:1.5">${t('import_hint')}</div>
+    <div style="font-size:12px;color:#bbb;margin-bottom:12px">${t('import_split_hint')}</div>
+    <textarea id="import-text" style="min-height:220px;font-size:14px" placeholder="${esc(t('import_placeholder'))}" oninput="importText=this.value">${esc(importText)}</textarea>
+    <div class="flex-row" style="margin-top:14px">
+      <button class="btn-primary" onclick="analyzeImport()">${t('import_analyze')}</button>
+    </div>`;
+  } else {
+    html=`<div class="flex-row" style="margin-bottom:14px">
+      <button class="btn-secondary" onclick="backToImportInput()">← ${t('import_back')}</button>
+    </div>
+    <div style="font-size:19px;font-weight:700;margin-bottom:4px">${t('import_preview')}</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:14px">${importParsed.length} ${t('import_found')}</div>`;
+
+    importParsed.forEach((rec,i)=>{
+      const hasDate = !!rec.date;
+      html+=`<div class="card" style="border-color:${hasDate?'#e8e8e8':'#c8a05a66'}">
+        <div class="row2" style="margin-bottom:8px">
+          <div>
+            <label class="lbl">${t('date')}</label>
+            <input type="date" value="${esc(rec.date||'')}" oninput="importParsed[${i}].date=this.value" style="${hasDate?'':'border-color:#c8a05a'}" />
+            ${!hasDate?`<div style="font-size:11px;color:#c8a05a;margin-top:3px">${t('import_no_date')}</div>`:''}
+          </div>
+          <div>
+            <label class="lbl">${t('type')}</label>
+            <select oninput="importParsed[${i}].type=this.value">
+              ${SESSION_TYPES_().map(st=>`<option${rec.type===st?' selected':''}>${esc(st)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <label class="lbl">${t('duration_min')}</label>
+        <input type="number" value="${rec.duration||60}" min="1" oninput="importParsed[${i}].duration=+this.value" />
+        <label class="lbl">${t('import_content_label')}</label>
+        <textarea style="min-height:80px;font-size:13px" oninput="importParsed[${i}].content=this.value">${esc(rec.content)}</textarea>
+        <button class="btn-danger" style="margin-top:8px" onclick="removeImportRec(${i})">${t('delete')}</button>
+      </div>`;
+    });
+
+    html+=`<div class="flex-row" style="margin-top:16px">
+      <button class="btn-primary" onclick="confirmImport()">${t('import_confirm')}</button>
+      <button class="btn-secondary" onclick="backToImportInput()">${t('cancel')}</button>
+    </div>`;
+  }
+  document.getElementById('view-import').innerHTML=html;
+}
+
+function backToImportInput(){ importStep='input'; renderImport(); }
+function removeImportRec(i){ importParsed.splice(i,1); renderImport(); }
+
+// 日付を検出する（7/10, 2026/7/10, 7月10日, 07-10 など）
+function parseDateFromLine(line){
+  const year=new Date().getFullYear();
+  // 2026/7/10 or 2026-07-10
+  let m=line.match(/(20\d{2})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
+  if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  // 7/10 or 7-10 or 7月10日
+  m=line.match(/(?:^|\s)(\d{1,2})[\/\-月](\d{1,2})日?(?:\s|$|\D)/);
+  if(m){
+    const mo=+m[1], d=+m[2];
+    if(mo>=1&&mo<=12&&d>=1&&d<=31) return `${year}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  return null;
+}
+
+// 練習時間を検出（60分, 60min, 1時間半 など）
+function parseDurationFromText(text){
+  let m=text.match(/(\d+)\s*(?:分|min)/i);
+  if(m) return +m[1];
+  m=text.match(/(\d+)\s*(?:時間|hr|hour)/i);
+  if(m) return +m[1]*60;
+  return null;
+}
+
+// 種別を検出
+function parseTypeFromText(text){
+  const types=SESSION_TYPES_();
+  // 日本語キーワードでも判定
+  const kw=[
+    {k:['スパー','sparring','spar','rola'], t:0},
+    {k:['クラス','class','aula'], t:1},
+    {k:['テクニック','technique','técnica'], t:2},
+    {k:['ドリル','drill'], t:3},
+    {k:['試合','competition','competição'], t:4},
+    {k:['セルフ','solo'], t:5},
+    {k:['ノーギ','no-gi','nogi'], t:6},
+  ];
+  const lower=text.toLowerCase();
+  for(const {k,t:idx} of kw){
+    if(k.some(x=>lower.includes(x.toLowerCase()))) return types[idx];
+  }
+  return types[0];
+}
+
+function analyzeImport(){
+  const el=document.getElementById('import-text');
+  if(el) importText=el.value;
+  const text=importText.trim();
+  if(!text){ alert(t('import_empty')); return; }
+
+  // 空行で大きく分割
+  const blocks=text.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  importParsed=[];
+
+  blocks.forEach(block=>{
+    const lines=block.split('\n');
+    let date=null, contentLines=[];
+    // 各行で日付を探す（最初に見つかったものを採用）
+    lines.forEach((line,idx)=>{
+      const d=parseDateFromLine(line);
+      if(d && !date){
+        date=d;
+        // 日付行から日付部分を除いた残りも内容として拾う
+        const rest=line.replace(/(20\d{2})?[\/\-年]?\d{1,2}[\/\-月]\d{1,2}日?/,'').trim();
+        if(rest) contentLines.push(rest);
+      } else {
+        contentLines.push(line);
+      }
+    });
+    const content=contentLines.join('\n').trim();
+    importParsed.push({
+      date: date,
+      content: content,
+      duration: parseDurationFromText(block) || 60,
+      type: parseTypeFromText(block),
+    });
+  });
+
+  if(!importParsed.length){ alert(t('import_empty')); return; }
+  importStep='preview';
+  renderImport();
+}
+
+function confirmImport(){
+  const today=new Date().toISOString().split('T')[0];
+  let count=0;
+  importParsed.forEach(rec=>{
+    const s=newForm();
+    s.id=Date.now()+Math.floor(Math.random()*10000);
+    s.date=rec.date||today;
+    s.type=rec.type;
+    s.duration=rec.duration||60;
+    s.content=rec.content;
+    s.status='done';
+    sessions=[s,...sessions];
+    count++;
+  });
+  // 日付降順で並べ替え
+  sessions.sort((a,b)=>b.date.localeCompare(a.date));
+  save();
+  alert(`${count} ${t('import_done')}`);
+  importText=''; importParsed=[]; importStep='input';
+  showView('list');
 }
 
 
