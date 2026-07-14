@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BJJ Log</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="BJJ Log" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23b07d3a'/%3E%3Ctext y='.9em' font-size='75' x='12'%3E🥋%3C/text%3E%3C/svg%3E" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #f5f5f5; color: #1a1a1a; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; max-width: 720px; margin: 0 auto; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+    #header { padding: calc(20px + env(safe-area-inset-top)) 20px 0; border-bottom: 1px solid #e0e0e0; background: #fff; position: sticky; top: 0; z-index: 50; }
+    #header .logo { font-size: 11px; letter-spacing: 0.2em; color: #aaa; text-transform: uppercase; }
+    #header h1 { font-size: 22px; font-weight: 700; margin: 4px 0 0; color: #1a1a1a; letter-spacing: -0.3px; }
+    nav { display: flex; overflow-x: auto; }
+    nav button { padding: 10px 14px; background: none; border: none; border-bottom: 2px solid transparent; color: #999; font-size: 12px; font-weight: 400; letter-spacing: 0.03em; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    nav button.active { border-bottom-color: #b07d3a; color: #b07d3a; font-weight: 600; }
+    .page { padding: 16px; }
+    .card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+    .card.accent { border-color: #b07d3a33; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stat-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; }
+    .stat-num { font-size: 28px; font-weight: 700; color: #b07d3a; line-height: 1; }
+    .stat-label { font-size: 11px; color: #aaa; margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .section-title { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #aaa; margin-bottom: 10px; margin-top: 0; }
+    .session-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+    .session-date { font-size: 12px; color: #aaa; margin-bottom: 3px; }
+    .session-type { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .session-meta { font-size: 13px; color: #999; }
+    .badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; margin-right: 4px; margin-top: 4px; }
+    .badge-brown { background: #b07d3a18; color: #b07d3a; border: 1px solid #b07d3a33; }
+    .badge-green { background: #6ea88a18; color: #6ea88a; border: 1px solid #6ea88a33; }
+    .badge-blue { background: #6ea8c818; color: #6ea8c8; border: 1px solid #6ea8c833; }
+    .badge-gray { background: #88888818; color: #888; border: 1px solid #88888833; }
+    .badge-purple { background: #9b7acc18; color: #9b7acc; border: 1px solid #9b7acc33; }
+    label.lbl { display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; margin-bottom: 5px; margin-top: 14px; }
+    input, textarea, select { width: 100%; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; color: #1a1a1a; padding: 9px 12px; font-size: 16px; outline: none; font-family: inherit; }
+    textarea { resize: vertical; min-height: 72px; }
+    .btn-primary { background: #b07d3a; color: #fff; border: none; border-radius: 6px; padding: 12px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-secondary { background: none; color: #999; border: 1px solid #e0e0e0; border-radius: 6px; padding: 11px 18px; font-size: 13px; cursor: pointer; }
+    .btn-secondary.accent { color: #b07d3a; border-color: #b07d3a33; }
+    .btn-secondary.blue { color: #6a8fc8; border-color: #6a8fc833; }
+    .btn-light { background: #f0e8da; color: #b07d3a; border: none; border-radius: 6px; padding: 12px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-danger { background: none; color: #c0504a; border: 1px solid #c0504a33; border-radius: 6px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
+    .btn-sm { padding: 7px 14px; font-size: 12px; }
+    #fab { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 24px; width: 52px; height: 52px; border-radius: 26px; background: #b07d3a; color: #fff; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 20px rgba(176,125,58,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; line-height: 1; }
+    .phase-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .phase-tab { flex: 1; padding: 10px 0; background: #fff; color: #999; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; cursor: pointer; }
+    .phase-tab.active { background: #b07d3a; color: #fff; border-color: #b07d3a; font-weight: 700; }
+    .rating-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .rating-btn { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #999; }
+    .rating-btn.active { background: #b07d3a18; border-color: #b07d3a; color: #b07d3a; }
+    .goal-box { border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+    .goal-box.brown { background: #b07d3a0d; border: 1px solid #b07d3a2a; }
+    .goal-box.red { background: #c0504a0d; border: 1px solid #c0504a2a; }
+    .goal-box.green { background: #6ea88a0d; border: 1px solid #6ea88a2a; }
+    .goal-box.blue { background: #6ea8c80d; border: 1px solid #6ea8c82a; }
+    .detail-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #aaa; margin-bottom: 4px; }
+    .detail-value { font-size: 14px; color: #1a1a1a; line-height: 1.5; white-space: pre-wrap; }
+    .divider { border-top: 1px solid #ececec; margin: 16px 0; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .flex-between { display: flex; justify-content: space-between; align-items: flex-start; }
+    #modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    #modal-box { background: #fff; border-radius: 12px; padding: 24px; max-width: 460px; width: 100%; max-height: 80vh; overflow-y: auto; }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: #aaa; margin-bottom: 16px; }
+    .url-box { background: #f5f5f5; border-radius: 6px; padding: 10px 12px; font-size: 12px; word-break: break-all; color: #555; margin-bottom: 12px; }
+    .pending-banner { background: #fff; border: 1px solid #b07d3a44; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+    .pending-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid #ececec; }
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; margin-bottom: 10px; }
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px; }
+    .video-link { font-size: 12px; color: #6a8fc8; word-break: break-all; text-decoration: none; }
+    /* 技ライブラリ */
+    .tech-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+    .tech-name { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+    .tech-count { font-size: 12px; color: #aaa; margin-top: 3px; }
+    /* 動画メモ */
+    .vmemo-item { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+    .vmemo-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .vmemo-note { font-size: 13px; color: #666; margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
+    /* フローチャート（グラフ図） */
+    .fc-canvas-wrap { background: #faf8f5; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; margin-bottom: 12px; height: 480px; position: relative; touch-action: none; }
+    .fc-canvas-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+    .fc-graph-node { position: absolute; box-sizing: border-box; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+    .fc-graph-node .fc-nlabel { font-size: 9px; opacity: 0.9; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+    .fc-gn-pos { background: #6ea88a; border: 1px solid #5c9678; }
+    .fc-gn-me  { background: #b07d3a; border: 1px solid #9c6d2f; }
+    .fc-gn-opp { background: #6ea8c8; border: 1px solid #5c93b3; }
+    .fc-legend { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+    .fc-legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+    .fc-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    /* 編集用ツリー */
+    .fc-node { border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; border: 1px solid #e8e8e8; background: #fff; }
+    .fc-node.me { border-left: 4px solid #b07d3a; background: #b07d3a0a; }
+    .fc-node.opp { border-left: 4px solid #6ea8c8; background: #6ea8c80a; }
+    .fc-node.start { border-left: 4px solid #6ea88a; background: #6ea88a0a; }
+    .fc-children { margin-left: 18px; padding-left: 10px; border-left: 2px dashed #e0e0e0; margin-top: 6px; }
+    .fc-actor-badge { font-size: 10px; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
+    .fc-actor-me { background: #b07d3a; color: #fff; }
+    .fc-actor-opp { background: #6ea8c8; color: #fff; }
+    /* 統計 */
+    .stats-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 4px; }
+    .stats-tab { padding: 8px 14px; background: #fff; color: #999; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .stats-tab.active { background: #b07d3a; color: #fff; border-color: #b07d3a; font-weight: 600; }
+    .sub-toggle { display: flex; gap: 6px; margin-bottom: 14px; }
+    .sub-toggle button { flex: 1; padding: 8px 0; background: #fff; color: #999; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; cursor: pointer; }
+    .sub-toggle button.active { background: #b07d3a18; color: #b07d3a; border-color: #b07d3a; font-weight: 600; }
+    .rank-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .rank-num { width: 22px; height: 22px; border-radius: 11px; background: #b07d3a; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rank-bar-wrap { flex: 1; }
+    .rank-bar-bg { background: #f0ede8; border-radius: 4px; height: 24px; position: relative; overflow: hidden; }
+    .rank-bar-fill { background: linear-gradient(90deg,#b07d3a,#c8a05a); height: 100%; border-radius: 4px; }
+    .rank-label { position: absolute; left: 8px; top: 0; height: 24px; display: flex; align-items: center; font-size: 12px; color: #1a1a1a; font-weight: 600; }
+    .rank-count { position: absolute; right: 8px; top: 0; height: 24px; display: flex; align-items: center; font-size: 11px; color: #666; }
+    /* 検索 */
+    .search-box { position: sticky; top: 0; background: #f5f5f5; padding-bottom: 12px; z-index: 10; }
+    .search-input { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid #e0e0e0; border-radius: 24px; outline: none; background: #fff; }
+    .search-input:focus { border-color: #b07d3a; }
+    .search-group { margin-bottom: 18px; }
+    .search-count { font-size: 11px; color: #aaa; margin-left: 6px; font-weight: 400; }
+    mark { background: #b07d3a33; color: #1a1a1a; padding: 0 2px; border-radius: 2px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div id="header">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div class="logo">BJJ</div>
+      <h1>BJJ Log</h1>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button onclick="openSearch()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">🔍</button>
+      <button onclick="openSettings()" style="background:none;border:1px solid #e0e0e0;border-radius:20px;padding:6px 12px;font-size:15px;cursor:pointer;color:#666">⚙️</button>
+    </div>
+  </div>
+  <nav id="main-nav">
+    <button id="nav-dashboard" class="active" onclick="showView('dashboard')">ホーム</button>
+    <button id="nav-list" onclick="showView('list')">記録一覧</button>
+    <button id="nav-library" onclick="showView('library')">技ライブラリ</button>
+    <button id="nav-videos" onclick="showView('videos')">動画メモ</button>
+    <button id="nav-flowchart" onclick="showView('flowchart')">フローチャート</button>
+    <button id="nav-stats" onclick="showView('stats')">統計</button>
+  </nav>
+</div>
+<div id="view-dashboard" class="page"></div>
+<div id="view-list" class="page hidden"></div>
+<div id="view-detail" class="page hidden"></div>
+<div id="view-form" class="page hidden"></div>
+<div id="view-library" class="page hidden"></div>
+<div id="view-tech-detail" class="page hidden"></div>
+<div id="view-videos" class="page hidden"></div>
+<div id="view-flowchart" class="page hidden"></div>
+<div id="view-flowchart-detail" class="page hidden"></div>
+<div id="view-stats" class="page hidden"></div>
+<div id="view-search" class="page hidden"></div>
+<div id="view-import" class="page hidden"></div>
+<button id="fab" onclick="onFab()">＋</button>
+<div id="modal-bg" class="hidden"><div id="modal-box"></div></div>
+
+<script>
+
+// ── 多言語対応（i18n） ──
+const I18N = {
+  ja: {
+    app_title:'BJJ Log', nav_home:'ホーム', nav_list:'記録一覧', nav_library:'技ライブラリ', nav_videos:'動画メモ', nav_flowchart:'フローチャート',
+    // ダッシュボード
+    pending_title:'練習後の記録が未完了', goal_label:'目標', record_post:'練習後を記録',
+    stat_done:'完了した練習', stat_time:'総練習時間', stat_pending:'記録待ち', stat_avg:'平均コンディション',
+    recent_title:'最近の練習', empty_dashboard:'右下の＋ボタンで記録を追加しましょう',
+    status_pending:'記録待ち', status_done:'完了',
+    // カレンダー
+    cal_months:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+    cal_dow:['月','火','水','木','金','土','日'], no_record_day:'この日の記録なし', show_all:'全て表示',
+    // 一覧
+    all:'すべて', no_record:'記録なし',
+    // 詳細
+    back_list:'一覧', edit:'編集', delete:'削除',
+    pre_session:'練習前', post_session:'練習後',
+    goal_today:'🎯 今日の目標', body_condition:'体の状態', injury_pain:'怪我・痛み',
+    content_label:'練習内容', techniques_label:'習得・練習した技', view_in_library:'→ライブラリで見る',
+    sparring_notes:'スパーリングメモ', subs_got:'取った', subs_given:'取られた',
+    correction:'⚡ 行動是正', reinforcement:'✅ 行動強化', next_goal:'🎯 次回の目標',
+    body_injury_post:'⚠️ 体の状態・怪我（後）', condition:'コンディション', practice_video:'📹 練習動画',
+    // フォーム
+    cancel:'キャンセル', basic_info:'基本情報', date:'日付', type:'種別',
+    start_time:'開始時刻', end_time:'終了時刻', duration_min:'時間 (分)',
+    time_auto_hint:'開始・終了時刻を入れると自動で計算されます（直接入力も可）',
+    partner_gym:'相手 / 道場', pre_state:'練習前の状態',
+    goal_placeholder:'今日の練習で達成したいこと', condition_placeholder:'疲労感、睡眠など',
+    injury_placeholder:'例: 右膝に違和感', tags:'タグ', tag_placeholder:'タグを入力', add:'追加',
+    save_pre:'練習前を保存', update_pre:'練習前を更新', input_post:'練習後を入力 →',
+    content_placeholder:'今日の練習で行ったこと',
+    tech_name:'技名', tech_name_placeholder:'例: アームバー', position:'ポジション', memo:'メモ',
+    memo_placeholder:'ポイントや気づき', tech_video_url:'この技の動画URL', add_tech:'＋ 技を追加',
+    sparring_placeholder:'攻防・気づきなど', subs_got_label:'取ったサブミッション', subs_given_label:'取られたサブミッション',
+    review:'振り返り', correction_label:'⚡ 行動是正（直すべき点）', correction_placeholder:'次回修正したい動き・習慣',
+    reinforcement_label:'✅ 行動強化（続けるべき点）', reinforcement_placeholder:'うまくいったこと・継続したいこと',
+    next_goal_label:'🎯 次回の目標', next_goal_placeholder:'次の練習で意識すること',
+    body_injury_post_label:'⚠️ 体の状態・怪我（練習後）', injury_post_placeholder:'痛みや疲労感など',
+    video_section:'練習動画', video_hint:'YouTube・Googleドライブなどのセッション全体の動画',
+    complete_save:'完了・保存', back_to_pre:'← 練習前に戻る',
+    // 技ライブラリ
+    tech_types:'技', tech_count_suffix:'種類', empty_library:'練習記録に技を追加すると\nここに自動でまとめられます',
+    times_practiced:'回練習', last:'最終', practiced_count:'回練習',
+    tech_videos:'📹 この技の動画', practice_history:'練習履歴', view_record:'記録を見る →',
+    // 動画メモ
+    ref_videos:'参考動画メモ', empty_videos:'右下の＋ボタンで参考動画を追加しましょう',
+    no_category:'カテゴリなし', filter:'絞り込む',
+    add_ref_video:'参考動画を追加', edit_video_memo:'動画メモを編集',
+    title_label:'タイトル', title_placeholder:'例: ベリンボロ解説',
+    video_url:'動画URL', category_label:'カテゴリ（技名など）', category_placeholder:'例: アームバー、チョーク',
+    memo_ref_placeholder:'参考にしたいポイントなど', update:'更新',
+    // フローチャート
+    flowchart_count:'フローチャート', flowchart_hint:'ポジションを起点に、自分の動き・相手の動きで枝分かれさせて戦略を可視化できます',
+    empty_flowchart:'右下の＋ボタンで\nフローチャートを作成しましょう',
+    moves_count:'個の動き', open:'開く →', untitled:'（無題）',
+    fc_edit:'✏️ 編集', fc_done:'✓ 編集完了',
+    fc_title_placeholder:'例: デラヒーバセットアップからスイープ',
+    start_position:'🟢 開始ポジション', start_pos_placeholder:'例: 片襟片袖グリップで相四つ',
+    move_flow:'動きの流れ', move_flow_edit:'動きの流れ（編集）',
+    branch_hint:'🟤 自分の動き ／ 🔵 相手の動き で枝分かれ', start:'開始',
+    legend_pos:'ポジション', legend_me:'自分', legend_opp:'相手',
+    empty_fc_detail:'「✏️ 編集」から\nフローチャートを作成しましょう',
+    pinch_hint:'2本指でピンチ拡大縮小 · 1本指でドラッグ移動',
+    move_placeholder:'動き・技（例: 腕を差し込む）', notes_optional:'メモ（任意）',
+    add_me:'＋自分', add_opp:'＋相手', add_my_move:'＋ 自分の動き', add_opp_move:'＋ 相手の動き',
+    me:'自分', opp:'相手',
+    // 種別・ポジション・評価
+    positions:['マウント','バック','ガード','ハーフガード','サイドコントロール','ニーオンベリー','タートル','スタンド'],
+    ratings:['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'],
+    rating_short:['最悪','イマイチ','普通','良い','最高'],
+    session_types:['スパーリング','クラス','テクニック','ドリル','試合','セルフトレーニング','ノーギ','筋トレ','HIIT'],
+    // 確認ダイアログ
+    confirm_delete_record:'この記録を削除しますか？', confirm_delete_video:'この動画メモを削除しますか？',
+    confirm_delete_flowchart:'このフローチャートを削除しますか？', confirm_delete_node:'この動き（以下の枝も含む）を削除しますか？',
+    alert_url_title:'URLかタイトルを入力してください',
+    lang_label:'言語 / Language', copy_url:'URLをコピー', partner_placeholder:'例: 山田先生',
+    types_title:'練習種別', types_hint:'よく使う練習種別を自由に追加できます。標準の種別は削除できません。',
+    type_add_placeholder:'新しい種別名', type_exists:'すでに存在する種別です', type_in_use:'この種別は記録で使われています。削除しますか？',
+    type_default:'標準', type_custom:'追加した種別', type_hidden:'非表示にした種別', type_restore:'戻す',
+    type_in_use_n:'この種別は{n}件の記録で使われています。選択肢から削除しますか？（過去の記録はそのまま残ります）',
+    type_used_count:'{n}件',
+    marks_title:'カレンダーのマーク', marks_hint:'練習種別ごとにカレンダーに表示するマークを選べます。',
+    carry_goal_title:'次回目標の引き継ぎ', carry_goal_hint:'前回の「次回の目標」を、新しい記録の目標欄に自動で入れます。',
+    carry_goal_from:'前回の目標を引き継ぎました',
+    fields_title:'表示項目', fields_hint:'練習記録の入力画面に表示する項目を選べます。日付・種別・時間は常に表示されます。',
+    fields_reset:'すべて表示に戻す',
+    settings_title:'設定', backup_title:'バックアップ', backup_hint:'すべてのデータをファイルに保存します。機種変更や将来のアプリ移行に使えます。',
+    backup_export:'📤 データを書き出す', backup_import:'📥 データを読み込む',
+    backup_export_done:'データを書き出しました', backup_import_confirm:'現在のデータは上書きされます。読み込みますか？',
+    backup_import_done:'データを読み込みました', backup_import_error:'ファイルの読み込みに失敗しました',
+    backup_stats:'記録: {r}件 / 動画: {v}件 / フローチャート: {f}件',
+    backup_warning:'⚠️ このデータはブラウザ内にのみ保存されています。定期的にバックアップを取ることをおすすめします。',
+    import_title:'メモをインポート', import_hint:'メモやLINEに書いた練習記録を貼り付けてください。日付が見つかれば自動で分割します。',
+    import_placeholder:'7/10 スパーリング 60分\nアームバー練習した\n調子良かった\n\n7/12 クラス\nデラヒーバの入り方を教わった',
+    import_analyze:'解析する', import_confirm:'取り込む', import_found:'件の記録が見つかりました',
+    import_no_date:'日付が見つかりません', import_set_date:'日付を選択', import_preview:'プレビュー',
+    import_empty:'テキストを貼り付けてください', import_done:'件の記録を取り込みました', import_back:'戻る',
+    import_split_hint:'空行で区切ると複数の記録として取り込めます', import_content_label:'内容',
+    search_title:'検索', search_placeholder:'技名・メモ・目標などで検索', search_no_result:'該当する結果がありません', search_hint:'キーワードを入力してください',
+    search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
+    nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
+    stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
+    stats_by_tech:'技ランキング', stats_by_position:'ポジション別', stats_hours:'時間', stats_no_data:'データがありません', stats_avg_condition:'平均コンディション',
+  },
+  en: {
+    app_title:'BJJ Log', nav_home:'Home', nav_list:'Records', nav_library:'Techniques', nav_videos:'Videos', nav_flowchart:'Flowchart',
+    pending_title:'Post-session record incomplete', goal_label:'Goal', record_post:'Log post-session',
+    stat_done:'Sessions done', stat_time:'Total time', stat_pending:'Pending', stat_avg:'Avg condition',
+    recent_title:'Recent sessions', empty_dashboard:'Tap the + button to add a record',
+    status_pending:'Pending', status_done:'Done',
+    cal_months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    cal_dow:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], no_record_day:'No record this day', show_all:'Show all',
+    all:'All', no_record:'No records',
+    back_list:'List', edit:'Edit', delete:'Delete',
+    pre_session:'Pre-session', post_session:'Post-session',
+    goal_today:'🎯 Today\'s goal', body_condition:'Body condition', injury_pain:'Injury / pain',
+    content_label:'Session content', techniques_label:'Techniques practiced', view_in_library:'→ view in library',
+    sparring_notes:'Sparring notes', subs_got:'Got', subs_given:'Given',
+    correction:'⚡ To correct', reinforcement:'✅ To reinforce', next_goal:'🎯 Next goal',
+    body_injury_post:'⚠️ Body / injury (after)', condition:'Condition', practice_video:'📹 Session videos',
+    cancel:'Cancel', basic_info:'Basic info', date:'Date', type:'Type',
+    start_time:'Start time', end_time:'End time', duration_min:'Duration (min)',
+    time_auto_hint:'Auto-calculated from start/end times (or enter directly)',
+    partner_gym:'Partner / gym', pre_state:'Pre-session state',
+    goal_placeholder:'What you want to achieve today', condition_placeholder:'Fatigue, sleep, etc.',
+    injury_placeholder:'e.g. right knee discomfort', tags:'Tags', tag_placeholder:'Enter a tag', add:'Add',
+    save_pre:'Save pre-session', update_pre:'Update pre-session', input_post:'Enter post-session →',
+    content_placeholder:'What you did in today\'s session',
+    tech_name:'Technique', tech_name_placeholder:'e.g. Armbar', position:'Position', memo:'Notes',
+    memo_placeholder:'Key points or insights', tech_video_url:'Video URL for this technique', add_tech:'＋ Add technique',
+    sparring_placeholder:'Exchanges, insights, etc.', subs_got_label:'Submissions got', subs_given_label:'Submissions given',
+    review:'Review', correction_label:'⚡ To correct', correction_placeholder:'Movements/habits to fix next time',
+    reinforcement_label:'✅ To reinforce', reinforcement_placeholder:'What went well / to continue',
+    next_goal_label:'🎯 Next goal', next_goal_placeholder:'What to focus on next session',
+    body_injury_post_label:'⚠️ Body / injury (post-session)', injury_post_placeholder:'Pain or fatigue, etc.',
+    video_section:'Session videos', video_hint:'Full-session videos from YouTube, Google Drive, etc.',
+    complete_save:'Complete & save', back_to_pre:'← Back to pre-session',
+    tech_types:'Techniques', tech_count_suffix:'types', empty_library:'Techniques you add to records\nwill appear here automatically',
+    times_practiced:'times', last:'Last', practiced_count:'times practiced',
+    tech_videos:'📹 Videos for this technique', practice_history:'Practice history', view_record:'View record →',
+    ref_videos:'Reference videos', empty_videos:'Tap the + button to add a reference video',
+    no_category:'Uncategorized', filter:'Filter',
+    add_ref_video:'Add reference video', edit_video_memo:'Edit video memo',
+    title_label:'Title', title_placeholder:'e.g. Berimbolo tutorial',
+    video_url:'Video URL', category_label:'Category (technique, etc.)', category_placeholder:'e.g. Armbar, Choke',
+    memo_ref_placeholder:'Points you want to reference', update:'Update',
+    flowchart_count:'Flowcharts', flowchart_hint:'Visualize strategy by branching from a position into your moves and opponent\'s moves',
+    empty_flowchart:'Tap the + button to\ncreate a flowchart',
+    moves_count:'moves', open:'Open →', untitled:'(Untitled)',
+    fc_edit:'✏️ Edit', fc_done:'✓ Done',
+    fc_title_placeholder:'e.g. De la Riva setup to sweep',
+    start_position:'🟢 Starting position', start_pos_placeholder:'e.g. Collar-sleeve grip',
+    move_flow:'Move flow', move_flow_edit:'Move flow (edit)',
+    branch_hint:'🟤 Your move ／ 🔵 Opponent\'s move', start:'Start',
+    legend_pos:'Position', legend_me:'You', legend_opp:'Opponent',
+    empty_fc_detail:'Tap "✏️ Edit" to\ncreate a flowchart',
+    pinch_hint:'Pinch with 2 fingers to zoom · Drag with 1 finger to move',
+    move_placeholder:'Move/technique (e.g. insert arm)', notes_optional:'Notes (optional)',
+    add_me:'＋You', add_opp:'＋Opp', add_my_move:'＋ Your move', add_opp_move:'＋ Opponent\'s move',
+    me:'You', opp:'Opp',
+    positions:['Mount','Back','Guard','Half guard','Side control','Knee on belly','Turtle','Standing'],
+    ratings:['😞 Terrible','😕 Poor','😐 OK','🙂 Good','😄 Great'],
+    rating_short:['Terrible','Poor','OK','Good','Great'],
+    session_types:['Sparring','Class','Technique','Drills','Competition','Solo training','No-Gi','Strength','HIIT'],
+    confirm_delete_record:'Delete this record?', confirm_delete_video:'Delete this video memo?',
+    confirm_delete_flowchart:'Delete this flowchart?', confirm_delete_node:'Delete this move (and its branches)?',
+    alert_url_title:'Please enter a URL or title',
+    lang_label:'言語 / Language', copy_url:'Copy URL', partner_placeholder:'e.g. Coach Yamada',
+    types_title:'Session types', types_hint:'Add your own session types. Default types cannot be removed.',
+    type_add_placeholder:'New type name', type_exists:'This type already exists', type_in_use:'This type is used in records. Remove anyway?',
+    type_default:'Default', type_custom:'Custom types', type_hidden:'Hidden types', type_restore:'Restore',
+    type_in_use_n:'This type is used in {n} record(s). Remove from the list? (Existing records stay unchanged)',
+    type_used_count:'{n} records',
+    marks_title:'Calendar marks', marks_hint:'Choose a mark to show on the calendar for each session type.',
+    carry_goal_title:'Carry over next goal', carry_goal_hint:'Automatically fill the goal field with your previous \'next goal\'.',
+    carry_goal_from:'Carried over from last session',
+    fields_title:'Visible fields', fields_hint:'Choose which fields appear in the session form. Date, type and duration are always shown.',
+    fields_reset:'Show all',
+    settings_title:'Settings', backup_title:'Backup', backup_hint:'Save all your data to a file. Useful for device changes or future app migration.',
+    backup_export:'📤 Export data', backup_import:'📥 Import data',
+    backup_export_done:'Data exported', backup_import_confirm:'Current data will be overwritten. Continue?',
+    backup_import_done:'Data imported', backup_import_error:'Failed to read file',
+    backup_stats:'Records: {r} / Videos: {v} / Flowcharts: {f}',
+    backup_warning:'⚠️ Your data is stored only in this browser. We recommend backing up regularly.',
+    import_title:'Import notes', import_hint:'Paste training notes from your memo app or LINE. Records are split automatically if dates are found.',
+    import_placeholder:'7/10 Sparring 60min\nDrilled armbar\nFelt good\n\n7/12 Class\nLearned De la Riva entry',
+    import_analyze:'Analyze', import_confirm:'Import', import_found:'records found',
+    import_no_date:'No date found', import_set_date:'Select date', import_preview:'Preview',
+    import_empty:'Please paste some text', import_done:'records imported', import_back:'Back',
+    import_split_hint:'Separate records with a blank line', import_content_label:'Content',
+    search_title:'Search', search_placeholder:'Search by technique, notes, goals...', search_no_result:'No matching results', search_hint:'Enter a keyword',
+    search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
+    nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
+    stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
+    stats_by_tech:'Technique ranking', stats_by_position:'By position', stats_hours:'hrs', stats_no_data:'No data', stats_avg_condition:'Avg condition',
+  },
+  pt: {
+    app_title:'BJJ Log', nav_home:'Início', nav_list:'Registros', nav_library:'Técnicas', nav_videos:'Vídeos', nav_flowchart:'Fluxograma',
+    pending_title:'Registro pós-treino incompleto', goal_label:'Meta', record_post:'Registrar pós-treino',
+    stat_done:'Treinos feitos', stat_time:'Tempo total', stat_pending:'Pendentes', stat_avg:'Condição média',
+    recent_title:'Treinos recentes', empty_dashboard:'Toque no botão + para adicionar um registro',
+    status_pending:'Pendente', status_done:'Concluído',
+    cal_months:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+    cal_dow:['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'], no_record_day:'Sem registro neste dia', show_all:'Mostrar tudo',
+    all:'Todos', no_record:'Sem registros',
+    back_list:'Lista', edit:'Editar', delete:'Excluir',
+    pre_session:'Pré-treino', post_session:'Pós-treino',
+    goal_today:'🎯 Meta de hoje', body_condition:'Condição física', injury_pain:'Lesão / dor',
+    content_label:'Conteúdo do treino', techniques_label:'Técnicas treinadas', view_in_library:'→ ver na biblioteca',
+    sparring_notes:'Notas de sparring', subs_got:'Aplicadas', subs_given:'Sofridas',
+    correction:'⚡ A corrigir', reinforcement:'✅ A reforçar', next_goal:'🎯 Próxima meta',
+    body_injury_post:'⚠️ Corpo / lesão (depois)', condition:'Condição', practice_video:'📹 Vídeos do treino',
+    cancel:'Cancelar', basic_info:'Informações básicas', date:'Data', type:'Tipo',
+    start_time:'Início', end_time:'Fim', duration_min:'Duração (min)',
+    time_auto_hint:'Calculado automaticamente pelos horários (ou insira direto)',
+    partner_gym:'Parceiro / academia', pre_state:'Estado pré-treino',
+    goal_placeholder:'O que você quer alcançar hoje', condition_placeholder:'Fadiga, sono, etc.',
+    injury_placeholder:'ex: desconforto no joelho direito', tags:'Tags', tag_placeholder:'Digite uma tag', add:'Adicionar',
+    save_pre:'Salvar pré-treino', update_pre:'Atualizar pré-treino', input_post:'Inserir pós-treino →',
+    content_placeholder:'O que você fez no treino de hoje',
+    tech_name:'Técnica', tech_name_placeholder:'ex: Armlock', position:'Posição', memo:'Notas',
+    memo_placeholder:'Pontos-chave ou percepções', tech_video_url:'URL do vídeo desta técnica', add_tech:'＋ Adicionar técnica',
+    sparring_placeholder:'Trocas, percepções, etc.', subs_got_label:'Finalizações aplicadas', subs_given_label:'Finalizações sofridas',
+    review:'Análise', correction_label:'⚡ A corrigir', correction_placeholder:'Movimentos/hábitos a corrigir',
+    reinforcement_label:'✅ A reforçar', reinforcement_placeholder:'O que deu certo / a continuar',
+    next_goal_label:'🎯 Próxima meta', next_goal_placeholder:'No que focar no próximo treino',
+    body_injury_post_label:'⚠️ Corpo / lesão (pós-treino)', injury_post_placeholder:'Dor ou fadiga, etc.',
+    video_section:'Vídeos do treino', video_hint:'Vídeos completos do YouTube, Google Drive, etc.',
+    complete_save:'Concluir e salvar', back_to_pre:'← Voltar ao pré-treino',
+    tech_types:'Técnicas', tech_count_suffix:'tipos', empty_library:'Técnicas que você adicionar aos registros\naparecerão aqui automaticamente',
+    times_practiced:'vezes', last:'Última', practiced_count:'vezes treinada',
+    tech_videos:'📹 Vídeos desta técnica', practice_history:'Histórico de treino', view_record:'Ver registro →',
+    ref_videos:'Vídeos de referência', empty_videos:'Toque no botão + para adicionar um vídeo de referência',
+    no_category:'Sem categoria', filter:'Filtrar',
+    add_ref_video:'Adicionar vídeo de referência', edit_video_memo:'Editar vídeo',
+    title_label:'Título', title_placeholder:'ex: Tutorial de berimbolo',
+    video_url:'URL do vídeo', category_label:'Categoria (técnica, etc.)', category_placeholder:'ex: Armlock, Estrangulamento',
+    memo_ref_placeholder:'Pontos que quer referenciar', update:'Atualizar',
+    flowchart_count:'Fluxogramas', flowchart_hint:'Visualize a estratégia ramificando de uma posição para seus movimentos e os do oponente',
+    empty_flowchart:'Toque no botão + para\ncriar um fluxograma',
+    moves_count:'movimentos', open:'Abrir →', untitled:'(Sem título)',
+    fc_edit:'✏️ Editar', fc_done:'✓ Concluir',
+    fc_title_placeholder:'ex: De la Riva até a raspagem',
+    start_position:'🟢 Posição inicial', start_pos_placeholder:'ex: Pegada gola-manga',
+    move_flow:'Fluxo de movimentos', move_flow_edit:'Fluxo de movimentos (editar)',
+    branch_hint:'🟤 Seu movimento ／ 🔵 Movimento do oponente', start:'Início',
+    legend_pos:'Posição', legend_me:'Você', legend_opp:'Oponente',
+    empty_fc_detail:'Toque em "✏️ Editar" para\ncriar um fluxograma',
+    pinch_hint:'Pince com 2 dedos para zoom · Arraste com 1 dedo para mover',
+    move_placeholder:'Movimento/técnica (ex: inserir o braço)', notes_optional:'Notas (opcional)',
+    add_me:'＋Você', add_opp:'＋Opon', add_my_move:'＋ Seu movimento', add_opp_move:'＋ Movimento do oponente',
+    me:'Você', opp:'Opon',
+    positions:['Montada','Costas','Guarda','Meia-guarda','100 quilos','Joelho na barriga','Tartaruga','Em pé'],
+    ratings:['😞 Péssimo','😕 Ruim','😐 OK','🙂 Bom','😄 Ótimo'],
+    rating_short:['Péssimo','Ruim','OK','Bom','Ótimo'],
+    session_types:['Sparring','Aula','Técnica','Drills','Competição','Treino solo','No-Gi','Musculação','HIIT'],
+    confirm_delete_record:'Excluir este registro?', confirm_delete_video:'Excluir este vídeo?',
+    confirm_delete_flowchart:'Excluir este fluxograma?', confirm_delete_node:'Excluir este movimento (e seus ramos)?',
+    alert_url_title:'Insira uma URL ou título',
+    lang_label:'言語 / Language', copy_url:'Copiar URL', partner_placeholder:'ex: Prof. Silva',
+    types_title:'Tipos de treino', types_hint:'Adicione seus próprios tipos de treino. Os padrões não podem ser removidos.',
+    type_add_placeholder:'Novo tipo', type_exists:'Este tipo já existe', type_in_use:'Este tipo é usado em registros. Remover mesmo assim?',
+    type_default:'Padrão', type_custom:'Tipos personalizados', type_hidden:'Tipos ocultos', type_restore:'Restaurar',
+    type_in_use_n:'Este tipo é usado em {n} registro(s). Remover da lista? (Os registros existentes permanecem)',
+    type_used_count:'{n} registros',
+    marks_title:'Marcas do calendário', marks_hint:'Escolha uma marca para exibir no calendário para cada tipo de treino.',
+    carry_goal_title:'Herdar próxima meta', carry_goal_hint:'Preencher automaticamente a meta com a \'próxima meta\' do treino anterior.',
+    carry_goal_from:'Herdado do treino anterior',
+    fields_title:'Campos visíveis', fields_hint:'Escolha quais campos aparecem no formulário. Data, tipo e duração sempre aparecem.',
+    fields_reset:'Mostrar todos',
+    settings_title:'Configurações', backup_title:'Backup', backup_hint:'Salve todos os seus dados em um arquivo. Útil para troca de aparelho ou migração futura.',
+    backup_export:'📤 Exportar dados', backup_import:'📥 Importar dados',
+    backup_export_done:'Dados exportados', backup_import_confirm:'Os dados atuais serão substituídos. Continuar?',
+    backup_import_done:'Dados importados', backup_import_error:'Falha ao ler o arquivo',
+    backup_stats:'Registros: {r} / Vídeos: {v} / Fluxogramas: {f}',
+    backup_warning:'⚠️ Seus dados são salvos apenas neste navegador. Recomendamos fazer backup regularmente.',
+    import_title:'Importar notas', import_hint:'Cole suas notas de treino do app de notas ou WhatsApp. Os registros são divididos automaticamente se houver datas.',
+    import_placeholder:'10/7 Sparring 60min\nTreinei armlock\nMe senti bem\n\n12/7 Aula\nAprendi entrada de De la Riva',
+    import_analyze:'Analisar', import_confirm:'Importar', import_found:'registros encontrados',
+    import_no_date:'Data não encontrada', import_set_date:'Selecionar data', import_preview:'Prévia',
+    import_empty:'Cole algum texto', import_done:'registros importados', import_back:'Voltar',
+    import_split_hint:'Separe os registros com uma linha em branco', import_content_label:'Conteúdo',
+    search_title:'Buscar', search_placeholder:'Buscar por técnica, notas, metas...', search_no_result:'Nenhum resultado encontrado', search_hint:'Digite uma palavra-chave',
+    search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
+    nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
+    stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
+    stats_by_tech:'Ranking de técnicas', stats_by_position:'Por posição', stats_hours:'h', stats_no_data:'Sem dados', stats_avg_condition:'Condição média',
+  }
+};
+
+let currentLang = localStorage.getItem('bjj_lang') || 'ja';
+
+// 表示項目の設定（ユーザーがON/OFF可能）
+const FIELD_DEFAULTS = {
+  startEndTime: true, partner: true, goal: true, preCondition: true, preInjuries: true, tags: true,
+  content: true, techniques: true, sparringNotes: true, submissions: true,
+  corrections: true, reinforcements: true, nextGoal: true, injuries: true, rating: true, videos: true,
+};
+let fieldSettings = (()=>{
+  try {
+    const saved = JSON.parse(localStorage.getItem('bjj_fields') || '{}');
+    return { ...FIELD_DEFAULTS, ...saved };
+  } catch { return { ...FIELD_DEFAULTS }; }
+})();
+function saveFieldSettings(){ try { localStorage.setItem('bjj_fields', JSON.stringify(fieldSettings)); } catch{} }
+
+// 種別ごとのカレンダーマーク設定
+const MARK_OPTIONS = ['🥋','🤼','💪','🔥','⚡','🏆','📚','🎯','⭐️','💥','🩸','🧘'];
+const DEFAULT_MARK = '🥋';
+let typeMarks = (()=>{
+  try { return JSON.parse(localStorage.getItem('bjj_type_marks') || '{}'); } catch { return {}; }
+})();
+function saveTypeMarks(){ try { localStorage.setItem('bjj_type_marks', JSON.stringify(typeMarks)); } catch{} }
+function getMarkForType(type){ return typeMarks[type] || DEFAULT_MARK; }
+function setTypeMark(type, mark){ typeMarks[type]=mark; saveTypeMarks(); openSettings(); render(); }
+
+// 次回目標の引き継ぎ設定
+let carryOverGoal = (()=>{
+  const v = localStorage.getItem('bjj_carry_goal');
+  return v === null ? true : v === 'true';
+})();
+function toggleCarryGoal(){
+  carryOverGoal = !carryOverGoal;
+  localStorage.setItem('bjj_carry_goal', String(carryOverGoal));
+  openSettings();
+}
+function toggleField(key){ fieldSettings[key]=!fieldSettings[key]; saveFieldSettings(); openSettings(); }
+function fieldOn(key){ return fieldSettings[key]!==false; }
+function t(key){ return (I18N[currentLang] && I18N[currentLang][key]!==undefined) ? I18N[currentLang][key] : (I18N.ja[key]!==undefined?I18N.ja[key]:key); }
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('bjj_lang', lang);
+  applyStaticLabels();
+  render();
+  // 設定モーダルが開いていれば再描画して開いたままにする
+  const modal=document.getElementById('modal-bg');
+  if(modal && !modal.classList.contains('hidden')) openSettings();
+  else closeModal();
+}
+function applyStaticLabels(){
+  document.getElementById('nav-dashboard').textContent=t('nav_home');
+  document.getElementById('nav-list').textContent=t('nav_list');
+  document.getElementById('nav-library').textContent=t('nav_library');
+  document.getElementById('nav-videos').textContent=t('nav_videos');
+  document.getElementById('nav-flowchart').textContent=t('nav_flowchart');
+  document.getElementById('nav-stats').textContent=t('nav_stats');
+  document.querySelector('#header h1').textContent=t('app_title');
+}
+function openLangModal(){
+  document.getElementById('modal-box').innerHTML=`<div class="modal-title">${t('lang_label')}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
+      <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
+    </div>
+    <div style="margin-top:16px"><button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button></div>`;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+const STORAGE_KEY = 'jujutsu_sessions';
+const VMEMO_KEY   = 'jujutsu_vmemos';
+const FLOWCHART_KEY = 'jujutsu_flowcharts';
+function POSITIONS_(){ return t('positions'); }
+function RATING_LABELS_(){ return t('ratings'); }
+// カスタム種別（ユーザーが追加したもの）
+let customTypes = (()=>{
+  try { return JSON.parse(localStorage.getItem('bjj_custom_types') || '[]'); } catch { return []; }
+})();
+function saveCustomTypes(){ try { localStorage.setItem('bjj_custom_types', JSON.stringify(customTypes)); } catch{} }
+// 非表示にした標準種別
+let hiddenTypes = (()=>{
+  try { return JSON.parse(localStorage.getItem('bjj_hidden_types') || '[]'); } catch { return []; }
+})();
+function saveHiddenTypes(){ try { localStorage.setItem('bjj_hidden_types', JSON.stringify(hiddenTypes)); } catch{} }
+
+function SESSION_TYPES_(){
+  const defaults = t('session_types').filter(ty=>!hiddenTypes.includes(ty));
+  return [...defaults, ...customTypes];
+}
+// 記録で使われている種別も含めた全種別（表示用・統計用）
+function ALL_TYPES_(){
+  const used = [...new Set(sessions.map(s=>s.type).filter(Boolean))];
+  const all = [...t('session_types'), ...customTypes, ...used];
+  return [...new Set(all)];
+}
+function countTypeUsage(name){ return sessions.filter(s=>s.type===name).length; }
+
+function hideDefaultType(name){
+  const n = countTypeUsage(name);
+  if(n > 0 && !confirm(t('type_in_use_n').replace('{n}', n))) return;
+  if(!hiddenTypes.includes(name)) hiddenTypes.push(name);
+  saveHiddenTypes();
+  openSettings();
+  render();
+}
+function restoreDefaultType(name){
+  hiddenTypes = hiddenTypes.filter(x=>x!==name);
+  saveHiddenTypes();
+  openSettings();
+  render();
+}
+function addCustomType(){
+  const input=document.getElementById('new-type-input');
+  if(!input) return;
+  const name=input.value.trim();
+  if(!name){ return; }
+  const all=SESSION_TYPES_();
+  if(all.includes(name)){ alert(t('type_exists')); input.value=''; return; }
+  customTypes.push(name);
+  saveCustomTypes();
+  input.value='';
+  openSettings();
+  render();
+}
+function removeCustomType(name){
+  const n = countTypeUsage(name);
+  if(n > 0 && !confirm(t('type_in_use_n').replace('{n}', n))) return;
+  customTypes = customTypes.filter(x=>x!==name);
+  saveCustomTypes();
+  openSettings();
+  render();
+}
+
+let sessions = [];
+let vmemos = []; // 参考動画メモ
+let currentView = 'dashboard';
+let editingId = null;
+let formPhase = 'pre';
+let selectedSessionId = null;
+let selectedTechName = null;
+let filterTag = '';
+let form = newForm();
+let vmemoForm = { title:'', url:'', note:'', tags:[], category:'' };
+let editingVmemoId = null;
+let vmemoFilter = '';
+let flowcharts = []; // 柔術フローチャート
+let selectedFlowchartId = null;
+
+function newForm() {
+  return { id:Date.now(), date:new Date().toISOString().split('T')[0], type:'スパーリング', duration:60, startTime:'', endTime:'', partner:'', goal:'', preCondition:'', preInjuries:'', content:'', techniques:[], sparringNotes:'', submissions_got:0, submissions_given:0, corrections:'', reinforcements:'', rating:3, injuries:'', nextGoal:'', tags:[], status:'pre', videoUrls:[] };
+}
+
+function load() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if(s) sessions=JSON.parse(s); } catch{}
+  try { const v = localStorage.getItem(VMEMO_KEY);   if(v) vmemos=JSON.parse(v);   } catch{}
+  try { const fc = localStorage.getItem(FLOWCHART_KEY); if(fc) flowcharts=JSON.parse(fc); } catch{}
+  // 既存データに紛れ込んだ<br>を改行に戻す（1回限りのクリーンアップ）
+  cleanBrTags();
+}
+function cleanBrTags(){
+  const fix=(v)=> typeof v==='string' ? v.replace(/<br\s*\/?>/gi, '\n') : v;
+  let changed=false;
+  sessions.forEach(s=>{
+    ['goal','preCondition','preInjuries','content','sparringNotes','corrections','reinforcements','nextGoal','injuries'].forEach(k=>{
+      if(typeof s[k]==='string' && /<br/i.test(s[k])){ s[k]=fix(s[k]); changed=true; }
+    });
+    (s.techniques||[]).forEach(t=>{ if(typeof t.notes==='string' && /<br/i.test(t.notes)){ t.notes=fix(t.notes); changed=true; } });
+  });
+  vmemos.forEach(v=>{ if(typeof v.note==='string' && /<br/i.test(v.note)){ v.note=fix(v.note); changed=true; } });
+  if(changed){ save(); saveVmemos(); }
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions)); } catch{}
+}
+function saveVmemos() {
+  try { localStorage.setItem(VMEMO_KEY, JSON.stringify(vmemos)); } catch{}
+}
+function saveFlowcharts() {
+  try { localStorage.setItem(FLOWCHART_KEY, JSON.stringify(flowcharts)); } catch{}
+}
+load();
+
+// ── ナビ ──
+const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','stats','search','import'];
+function showView(v) {
+  ALL_VIEWS.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x!==v));
+  const nav = document.getElementById('main-nav');
+  const fab = document.getElementById('fab');
+  if (v==='form') { nav.classList.add('hidden'); fab.classList.add('hidden'); }
+  else if (v==='stats' || v==='search' || v==='import') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
+  else { nav.classList.remove('hidden'); fab.classList.remove('hidden'); }
+  ['dashboard','list','library','videos','flowchart','stats'].forEach(x => {
+    const btn = document.getElementById('nav-'+x);
+    if(btn) btn.classList.toggle('active', x===v || (v==='detail'&&x==='list') || (v==='tech-detail'&&x==='library') || (v==='flowchart-detail'&&x==='flowchart'));
+  });
+  currentView = v;
+  render();
+}
+
+function onFab() {
+  if (currentView==='videos') startNewVmemo();
+  else if (currentView==='flowchart') startNewFlowchart();
+  else startNew();
+}
+
+function render() {
+  if(currentView==='dashboard')   renderDashboard();
+  if(currentView==='list')        renderList();
+  if(currentView==='detail')      renderDetail();
+  if(currentView==='form')        renderForm();
+  if(currentView==='library')     renderLibrary();
+  if(currentView==='tech-detail') renderTechDetail();
+  if(currentView==='videos')      renderVideos();
+  if(currentView==='flowchart')   renderFlowchartList();
+  if(currentView==='flowchart-detail') renderFlowchartDetail();
+  if(currentView==='stats') renderStats();
+  if(currentView==='search') renderSearch();
+  if(currentView==='import') renderImport();
+}
+
+function badge(text,cls){ return `<span class="badge ${cls}">${text}</span>`; }
+function goalBox(label,text,cls){ if(!text) return ''; return `<div class="goal-box ${cls}"><div class="detail-label">${label}</div><div class="detail-value">${esc(text)}</div></div>`; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escBr(s){ return esc(s).replace(/\n/g,'<br>'); }
+
+function getEmbedHtml(url) {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
+  if(yt) return `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${yt[1]}?controls=1&modestbranding=1&rel=0" allowfullscreen></iframe></div>`;
+  const gd = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if(gd) return `<div class="video-wrapper"><iframe src="https://drive.google.com/file/d/${gd[1]}/preview" allowfullscreen></iframe></div>`;
+  const vi = url.match(/vimeo\.com\/(\d+)/);
+  if(vi) return `<div class="video-wrapper"><iframe src="https://player.vimeo.com/video/${vi[1]}" allowfullscreen></iframe></div>`;
+  return null;
+}
+
+// ── DASHBOARD ──
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth(); // 0-indexed
+
+function renderDashboard() {
+  const done=sessions.filter(s=>s.status==='done'), pending=sessions.filter(s=>s.status==='pre');
+  const totalMin=sessions.reduce((a,b)=>a+(b.duration||0),0);
+  const avgR=done.length?(done.reduce((a,b)=>a+(b.rating||3),0)/done.length).toFixed(1):'—';
+  let html='';
+
+  if(pending.length){
+    html+=`<div class="pending-banner"><p class="section-title" style="margin-bottom:8px">${t('pending_title')}</p>`;
+    pending.forEach(s=>{ html+=`<div class="pending-row"><div><span style="font-size:13px">${esc(s.date)} ${esc(s.type)}</span>${s.goal?`<div style="font-size:11px;color:#aaa">${t('goal_label')}: ${esc(s.goal)}</div>`:''}</div><button class="btn-primary btn-sm" onclick="startEdit(${s.id},'post')">${t('record_post')}</button></div>`; });
+    html+=`</div>`;
+  }
+
+  // カレンダー
+  html += renderCalendarHtml(calendarYear, calendarMonth);
+
+  html+=`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${done.length}</div><div class="stat-label">${t('stat_done')}</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.floor(totalMin/60)}h</div><div class="stat-label">${t('stat_time')}</div></div>
+    <div class="stat-card"><div class="stat-num">${pending.length}</div><div class="stat-label">${t('stat_pending')}</div></div>
+    <div class="stat-card"><div class="stat-num">${avgR}</div><div class="stat-label">${t('stat_avg')}</div></div>
+  </div>`;
+
+  html+=`<p class="section-title">${t('recent_title')}</p>`;
+  const recent=sessions.slice(0,5);
+  if(!recent.length) html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">${t('empty_dashboard')}</div></div>`;
+  recent.forEach(s=>{ html+=sessionItemHtml(s); });
+  document.getElementById('view-dashboard').innerHTML=html;
+}
+
+function renderCalendarHtml(year, month) {
+  const monthNames=t('cal_months');
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // 練習した日をSetで管理（date文字列）
+  // 日付 → その日の練習種別リスト
+  const dateMarks = {};
+  sessions.forEach(s=>{
+    if(!dateMarks[s.date]) dateMarks[s.date]=[];
+    const mark=getMarkForType(s.type);
+    if(!dateMarks[s.date].includes(mark)) dateMarks[s.date].push(mark);
+  });
+  const trainingDates = new Set(Object.keys(dateMarks));
+
+  // 月の最初の日・最後の日
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month+1, 0);
+
+  // 月曜始まり：firstDayの曜日（0=日〜6=土 → 月始まりに変換）
+  let startDow = firstDay.getDay(); // 0=日
+  startDow = (startDow === 0) ? 6 : startDow - 1; // 月=0, 火=1, ..., 日=6
+
+  const daysInMonth = lastDay.getDate();
+
+  let cal = `<div class="card" style="margin-bottom:14px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <button onclick="calPrev()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#b07d3a;padding:0 8px">‹</button>
+      <div style="font-weight:700;font-size:15px">${currentLang==='ja'?year+'年 '+monthNames[month]:monthNames[month]+' '+year}</div>
+      <button onclick="calNext()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#b07d3a;padding:0 8px">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">`;
+
+  // 曜日ヘッダー（月〜日）
+  const dowLabels = t('cal_dow');
+  dowLabels.forEach((d, i) => {
+    const color = i===5 ? '#6ea8c8' : i===6 ? '#c0504a' : '#aaa';
+    cal += `<div style="font-size:11px;color:${color};padding:4px 0;font-weight:600">${d}</div>`;
+  });
+
+  // 空白セル（月曜始まりのオフセット）
+  for(let i=0; i<startDow; i++){
+    cal += `<div></div>`;
+  }
+
+  // 日付セル
+  for(let d=1; d<=daysInMonth; d++){
+    const mm = String(month+1).padStart(2,'0');
+    const dd = String(d).padStart(2,'0');
+    const dateStr = `${year}-${mm}-${dd}`;
+    const hasTrain = trainingDates.has(dateStr);
+    const isToday  = dateStr === todayStr;
+
+    const dow = (startDow + d - 1) % 7; // 0=月〜6=日
+    const textColor = dow===5 ? '#6ea8c8' : dow===6 ? '#c0504a' : '#1a1a1a';
+
+    let cellStyle = `font-size:12px;padding:3px 0;border-radius:6px;min-height:34px;cursor:${hasTrain?'pointer':'default'}`;
+    if(isToday) cellStyle += ';background:#b07d3a18;border:1.5px solid #b07d3a';
+
+    cal += `<div style="${cellStyle}" ${hasTrain?`onclick="calDayTap('${dateStr}')"`:''}>
+      <div style="color:${textColor};font-weight:${isToday?700:400}">${d}</div>
+      <div style="font-size:${(dateMarks[dateStr]||[]).length>1?'9':'13'}px;line-height:1.1">${hasTrain?dateMarks[dateStr].slice(0,2).join(''):''}</div>
+    </div>`;
+  }
+
+  cal += `</div></div>`;
+  return cal;
+}
+
+function calPrev(){
+  calendarMonth--;
+  if(calendarMonth<0){ calendarMonth=11; calendarYear--; }
+  renderDashboard();
+}
+function calNext(){
+  calendarMonth++;
+  if(calendarMonth>11){ calendarMonth=0; calendarYear++; }
+  renderDashboard();
+}
+function calDayTap(dateStr){
+  // その日の練習一覧へ
+  filterTag='';
+  showView('list');
+  // 日付でフィルタ（一時的にsessionsをその日に絞って表示）
+  const el=document.getElementById('view-list');
+  if(!el) return;
+  const daySessions=sessions.filter(s=>s.date===dateStr);
+  let html=`<div style="margin-bottom:12px"><button class="btn-secondary btn-sm" onclick="showView('list')">← ${t('show_all')}</button> <span style="font-size:13px;color:#aaa;margin-left:8px">${dateStr}</span></div>`;
+  if(!daySessions.length) html+=`<div style="color:#aaa;text-align:center;margin-top:40px">${t('no_record_day')}</div>`;
+  daySessions.forEach(s=>{ html+=sessionItemHtml(s); });
+  el.innerHTML=html;
+}
+
+function sessionItemHtml(s){
+  const emoji=['😞','😕','😐','🙂','😄'][(s.rating||3)-1];
+  return `<div class="session-item" onclick="openDetail(${s.id})">
+    <div class="flex-between">
+      <div><div class="session-date">${esc(s.date)}</div><div class="session-type">${esc(s.type)} <span class="session-meta">— ${s.duration}分</span></div>${s.partner?`<div style="font-size:12px;color:#bbb;margin-top:2px">${esc(s.partner)}</div>`:''}</div>
+      <div style="text-align:right">${badge(s.status==='pre'?t('status_pending'):t('status_done'),s.status==='pre'?'badge-brown':'badge-green')}${s.status==='done'?`<div style="font-size:18px;margin-top:4px">${emoji}</div>`:''}</div>
+    </div>
+    ${s.goal?`<div style="font-size:12px;color:#aaa;margin-top:6px">🎯 ${esc(s.goal)}</div>`:''}
+    ${(s.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}
+  </div>`;
+}
+
+// ── LIST ──
+function renderList(){
+  const allTags=[...new Set(sessions.flatMap(s=>s.tags||[]))];
+  let html='';
+  if(allTags.length) html+=`<div style="margin-bottom:12px"><span class="badge ${filterTag?'badge-brown':'badge-gray'}" style="cursor:pointer" onclick="setFilter('')">${t('all')}</span>${allTags.map(t=>`<span class="badge ${filterTag===t?'badge-brown':'badge-gray'}" style="cursor:pointer" onclick="setFilter('${esc(t)}')">${esc(t)}</span>`).join('')}</div>`;
+  const list=filterTag?sessions.filter(s=>(s.tags||[]).includes(filterTag)):sessions;
+  if(!list.length) html+=`<div style="color:#aaa;text-align:center;margin-top:40px;font-size:14px">${t('no_record')}</div>`;
+  list.forEach(s=>{ html+=sessionItemHtml(s); });
+  document.getElementById('view-list').innerHTML=html;
+}
+function setFilter(t){ filterTag=t; renderList(); }
+
+// ── DETAIL ──
+function openDetail(id){ selectedSessionId=id; showView('detail'); }
+function renderDetail(){
+  const s=sessions.find(x=>x.id===selectedSessionId); if(!s) return;
+  let html=`<div class="flex-row" style="margin-bottom:16px">
+    <button class="btn-secondary" onclick="showView('list')">← ${t('back_list')}</button>
+    ${s.status==='pre'?`<button class="btn-primary" onclick="startEdit(${s.id},'post')">${t('record_post')}</button>`:''}
+    <button class="btn-secondary" onclick="startEdit(${s.id},'${s.status==='pre'?'pre':'post'}')">${t('edit')}</button>
+    <button class="btn-danger" onclick="deleteSession(${s.id})">${t('delete')}</button>
+  </div>`;
+  html+=`<div class="card accent"><div class="detail-label">${esc(s.date)}</div><div style="font-size:20px;font-weight:700;margin:4px 0 8px">${esc(s.type)}</div>${(s.startTime&&s.endTime)?badge(esc(s.startTime)+' - '+esc(s.endTime),'badge-brown'):''}${badge(s.duration+'min','badge-brown')}${s.partner?badge(esc(s.partner),'badge-gray'):''}${badge(s.status==='pre'?t('status_pending'):t('status_done'),s.status==='pre'?'badge-brown':'badge-green')}${(s.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}</div>`;
+  html+=`<p class="section-title" style="margin-top:8px">${t('pre_session')}</p>`;
+  html+=goalBox(t('goal_today'),s.goal,'brown');
+  if(s.preCondition) html+=`<div style="margin-bottom:10px"><div class="detail-label">${t('body_condition')}</div><div class="detail-value">${esc(s.preCondition)}</div></div>`;
+  if(s.preInjuries)  html+=`<div style="margin-bottom:10px"><div class="detail-label">${t('injury_pain')}</div><div class="detail-value">${esc(s.preInjuries)}</div></div>`;
+  if(s.status==='done'){
+    html+=`<div class="divider"></div><p class="section-title">${t('post_session')}</p>`;
+    if(s.content) html+=`<div style="margin-bottom:12px"><div class="detail-label">${t('content_label')}</div><div class="detail-value">${esc(s.content)}</div></div>`;
+    if((s.techniques||[]).length){
+      html+=`<div class="detail-label">${t('techniques_label')}</div>`;
+      s.techniques.forEach(tk=>{
+        html+=`<div class="card" style="margin-bottom:6px;cursor:pointer" onclick="openTechDetail('${esc(tk.name)}')">
+          <div style="font-weight:600">${esc(tk.name)} <span style="font-size:11px;color:#b07d3a">${t('view_in_library')}</span></div>
+          ${tk.position?`<div style="font-size:12px;color:#aaa">${esc(tk.position)}</div>`:''}
+          ${tk.notes?`<div style="font-size:13px;color:#888;margin-top:4px">${esc(tk.notes)}</div>`:''}
+          ${(tk.videoUrls||[]).map(u=>{ const e=getEmbedHtml(u); return e||`<a class="video-link" href="${esc(u)}" target="_blank">${esc(u)}</a>`; }).join('')}
+        </div>`;
+      });
+    }
+    if(s.sparringNotes) html+=`<div style="margin-bottom:12px"><div class="detail-label">${t('sparring_notes')}</div><div class="detail-value">${esc(s.sparringNotes)}</div></div>`;
+    if(s.submissions_got>0||s.submissions_given>0) html+=`<div class="row2" style="margin-bottom:12px"><div class="stat-card"><div class="stat-num" style="color:#6ea88a">${s.submissions_got}</div><div class="stat-label">${t('subs_got')}</div></div><div class="stat-card"><div class="stat-num" style="color:#c0504a">${s.submissions_given}</div><div class="stat-label">${t('subs_given')}</div></div></div>`;
+    html+=goalBox(t('correction'),s.corrections,'red');
+    html+=goalBox(t('reinforcement'),s.reinforcements,'green');
+    html+=goalBox(t('next_goal'),s.nextGoal,'blue');
+    if(s.injuries) html+=`<div style="margin-bottom:10px"><div class="detail-label">${t('body_injury_post')}</div><div class="detail-value">${esc(s.injuries)}</div></div>`;
+    if(s.rating) html+=`<div style="margin-bottom:10px"><div class="detail-label">${t('condition')}</div><div style="font-size:18px">${RATING_LABELS_()[(s.rating||3)-1]}</div></div>`;
+    if((s.videoUrls||[]).length){
+      html+=`<div class="divider"></div><p class="section-title">${t('practice_video')}</p>`;
+      s.videoUrls.forEach(url=>{ const e=getEmbedHtml(url); html+=e||`<div style="margin-bottom:8px"><a class="video-link" href="${esc(url)}" target="_blank">${esc(url)}</a></div>`; });
+    }
+  }
+  document.getElementById('view-detail').innerHTML=html;
+}
+
+// ── SHARE ──
+function copyUrl(url,btn){ navigator.clipboard.writeText(url).then(()=>{ btn.textContent='✓'; setTimeout(()=>btn.textContent=t('copy_url'),2000); }); }
+function closeModal(){ document.getElementById('modal-bg').classList.add('hidden'); }
+
+// ── LIBRARY ──
+function renderLibrary(){
+  // 全セッションから技を集約
+  const techMap = {};
+  sessions.forEach(s=>{
+    (s.techniques||[]).forEach(tk=>{
+      if(!tk.name) return;
+      if(!techMap[tk.name]) techMap[tk.name]={ name:tk.name, count:0, positions:new Set(), lastDate:'' };
+      techMap[tk.name].count++;
+      if(tk.position) techMap[tk.name].positions.add(tk.position);
+      if(s.date > techMap[tk.name].lastDate) techMap[tk.name].lastDate=s.date;
+    });
+  });
+  const techs = Object.values(techMap).sort((a,b)=>b.count-a.count);
+  let html=`<p class="section-title">${t('tech_types')} (${techs.length}${t('tech_count_suffix')})</p>`;
+  if(!techs.length) html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">${escBr(t('empty_library'))}</div></div>`;
+  techs.forEach(tv=>{
+    html+=`<div class="tech-item" onclick="openTechDetail('${esc(tv.name)}')">
+      <div class="flex-between">
+        <div><div class="tech-name">${esc(tv.name)}</div><div class="tech-count">${tv.count}${t('times_practiced')} · ${t('last')}: ${tv.lastDate}</div></div>
+        <div>${[...tv.positions].map(p=>badge(esc(p),'badge-purple')).join('')}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('view-library').innerHTML=html;
+}
+
+function openTechDetail(name){ selectedTechName=name; showView('tech-detail'); }
+
+function renderTechDetail(){
+  const name=selectedTechName;
+  // この技が登場する全セッション
+  const relSessions=sessions.filter(s=>(s.techniques||[]).some(t=>t.name===name));
+  // 全動画URL収集（技レベル）
+  const allTechVideos=[];
+  relSessions.forEach(s=>{ (s.techniques||[]).filter(t=>t.name===name).forEach(t=>{ (t.videoUrls||[]).forEach(u=>allTechVideos.push({url:u,date:s.date})); }); });
+
+  let html=`<div class="flex-row" style="margin-bottom:16px">
+    <button class="btn-secondary" onclick="showView('library')">← ${t('nav_library')}</button>
+  </div>
+  <div class="card accent">
+    <div style="font-size:22px;font-weight:700">${esc(name)}</div>
+    <div style="font-size:13px;color:#aaa;margin-top:4px">${relSessions.length}${t('practiced_count')}</div>
+  </div>`;
+
+  // 技に紐付いた動画まとめ
+  if(allTechVideos.length){
+    html+=`<p class="section-title" style="margin-top:4px">${t('tech_videos')}</p>`;
+    allTechVideos.forEach(({url,date})=>{
+      const e=getEmbedHtml(url);
+      html+=`<div style="margin-bottom:4px"><div style="font-size:11px;color:#aaa;margin-bottom:4px">${date}</div>${e||`<a class="video-link" href="${esc(url)}" target="_blank">${esc(url)}</a>`}</div>`;
+    });
+  }
+
+  html+=`<div class="divider"></div><p class="section-title">${t('practice_history')}</p>`;
+  relSessions.sort((a,b)=>b.date.localeCompare(a.date)).forEach(s=>{
+    const techs=s.techniques.filter(t=>t.name===name);
+    html+=`<div class="card" style="cursor:pointer" onclick="openDetail(${s.id})">
+      <div class="flex-between">
+        <div><div class="session-date">${s.date}</div><div class="session-type">${esc(s.type)}</div></div>
+        <span style="font-size:11px;color:#b07d3a">${t('view_record')}</span>
+      </div>
+      ${techs.map(t=>`
+        ${t.position?`<div style="margin-top:6px">${badge(esc(t.position),'badge-purple')}</div>`:''}
+        ${t.notes?`<div style="font-size:13px;color:#666;margin-top:6px">${esc(t.notes)}</div>`:''}
+      `).join('')}
+    </div>`;
+  });
+  document.getElementById('view-tech-detail').innerHTML=html;
+}
+
+// ── VIDEOS（参考動画メモ） ──
+function renderVideos(){
+  const categories=[...new Set(vmemos.map(v=>v.category).filter(Boolean))].sort();
+  const filtered = vmemoFilter ? vmemos.filter(v=>v.category===vmemoFilter) : vmemos;
+
+  let html='';
+
+  // カテゴリフィルターバー
+  if(categories.length){
+    html+=`<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px">
+      <span class="badge ${vmemoFilter?'badge-gray':'badge-brown'}" style="cursor:pointer;font-size:12px;padding:4px 10px" onclick="setVmemoFilter('')">${t('all')}</span>
+      ${categories.map(c=>`<span class="badge ${vmemoFilter===c?'badge-purple':'badge-gray'}" style="cursor:pointer;font-size:12px;padding:4px 10px" onclick="setVmemoFilter('${esc(c)}')">${esc(c)}</span>`).join('')}
+    </div>`;
+  }
+
+  // カテゴリ別グループ表示
+  if(vmemoFilter){
+    // 絞り込み中：フラットに表示
+    html+=`<p class="section-title">${esc(vmemoFilter)} (${filtered.length})</p>`;
+    if(!filtered.length) html+=`<div style="color:#aaa;text-align:center;margin-top:20px;font-size:14px">${t('no_record')}</div>`;
+    filtered.forEach(v=>{ html+=vmemoItemHtml(v); });
+  } else {
+    // 全表示：カテゴリごとにグループ化
+    const uncategorized = vmemos.filter(v=>!v.category);
+    // カテゴリ別
+    categories.forEach(cat=>{
+      const items=vmemos.filter(v=>v.category===cat);
+      html+=`<div style="margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <p class="section-title" style="margin:0">${esc(cat)} (${items.length})</p>
+          <span class="badge badge-purple" style="cursor:pointer" onclick="setVmemoFilter('${esc(cat)}')">${t('filter')}</span>
+        </div>
+        ${items.map(v=>vmemoItemHtml(v)).join('')}
+      </div>`;
+    });
+    if(uncategorized.length){
+      html+=`<p class="section-title" style="margin-top:8px">${t('no_category')} (${uncategorized.length})</p>`;
+      uncategorized.forEach(v=>{ html+=vmemoItemHtml(v); });
+    }
+    if(!vmemos.length) html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🎬</div><div style="color:#aaa;font-size:14px">${t('empty_videos')}</div></div>`;
+  }
+
+  document.getElementById('view-videos').innerHTML=html;
+}
+
+function vmemoItemHtml(v){
+  const e=getEmbedHtml(v.url||'');
+  return `<div class="vmemo-item">
+    <div class="flex-between" style="margin-bottom:6px">
+      <div class="vmemo-title">${esc(v.title||v.url)}</div>
+      <div class="flex-row" style="gap:6px">
+        <button class="btn-secondary btn-sm" onclick="editVmemo(${v.id})">${t('edit')}</button>
+        <button class="btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteVmemo(${v.id})">${t('delete')}</button>
+      </div>
+    </div>
+    ${v.category?badge(esc(v.category),'badge-purple'):''}
+    ${(v.tags||[]).map(t=>badge(esc(t),'badge-blue')).join('')}
+    ${e||`<div style="margin-top:8px"><a class="video-link" href="${esc(v.url)}" target="_blank">${esc(v.url)}</a></div>`}
+    ${v.note?`<div class="vmemo-note">${esc(v.note)}</div>`:''}
+  </div>`;
+}
+
+function setVmemoFilter(cat){ vmemoFilter=cat; renderVideos(); }
+
+function startNewVmemo(){
+  editingVmemoId=null;
+  vmemoForm={ title:'', url:'', note:'', tags:[], category:'' };
+  openVmemoModal();
+}
+function editVmemo(id){
+  const v=vmemos.find(x=>x.id===id); if(!v) return;
+  editingVmemoId=id;
+  vmemoForm={ title:v.title||'', url:v.url||'', note:v.note||'', tags:[...(v.tags||[])], category:v.category||'' };
+  openVmemoModal();
+}
+function openVmemoModal(){
+  document.getElementById('modal-box').innerHTML=renderVmemoForm();
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+function renderVmemoForm(){
+  return `<div class="modal-title">${editingVmemoId?t('edit_video_memo'):t('add_ref_video')}</div>
+  <label class="lbl">${t('title_label')}</label>
+  <input type="text" id="vm-title" value="${esc(vmemoForm.title)}" placeholder="${t('title_placeholder')}" oninput="vmemoForm.title=this.value" />
+  <label class="lbl">${t('video_url')}</label>
+  <input type="url" id="vm-url" value="${esc(vmemoForm.url)}" placeholder="https://..." oninput="vmemoForm.url=this.value" />
+  <label class="lbl">${t('category_label')}</label>
+  <input type="text" id="vm-category" value="${esc(vmemoForm.category)}" placeholder="${t('category_placeholder')}" oninput="vmemoForm.category=this.value" />
+  <label class="lbl">${t('memo')}</label>
+  <textarea id="vm-note" placeholder="${t('memo_ref_placeholder')}" oninput="vmemoForm.note=this.value">${esc(vmemoForm.note)}</textarea>
+  <div class="flex-row" style="margin-top:16px">
+    <button class="btn-primary" onclick="saveVmemo()">${editingVmemoId?t('update'):t('add')}</button>
+    <button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+  </div>`;
+}
+function saveVmemo(){
+  if(!vmemoForm.url.trim()&&!vmemoForm.title.trim()){ alert(t('alert_url_title')); return; }
+  if(editingVmemoId){
+    vmemos=vmemos.map(x=>x.id===editingVmemoId?{...x,...vmemoForm}:x);
+  } else {
+    vmemos=[{ id:Date.now(), ...vmemoForm }, ...vmemos];
+  }
+  saveVmemos(); closeModal(); renderVideos();
+}
+function deleteVmemo(id){
+  if(!confirm(t('confirm_delete_video'))) return;
+  vmemos=vmemos.filter(x=>x.id!==id); saveVmemos(); renderVideos();
+}
+
+// ── FORM ──
+function startNew(){
+  editingId=null;
+  form=newForm();
+  // 前回の完了済みセッションから「次回の目標」を引き継ぐ
+  if(carryOverGoal){
+    const lastDone = sessions
+      .filter(s=>s.status==='done' && s.nextGoal && s.nextGoal.trim())
+      .sort((a,b)=>b.date.localeCompare(a.date))[0];
+    if(lastDone){ form.goal = lastDone.nextGoal; form._carriedGoal = true; }
+  }
+  formPhase='pre';
+  showView('form');
+}
+function startEdit(id,phase){ const s=sessions.find(x=>x.id===id); if(!s) return; editingId=id; form=JSON.parse(JSON.stringify(s)); formPhase=phase||'pre'; showView('form'); }
+function deleteSession(id){ if(!confirm(t('confirm_delete_record'))) return; sessions=sessions.filter(x=>x.id!==id); save(); showView('list'); }
+
+function setFormPhase(p){
+  const fields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s'],['f-content','content','s'],['f-sparringNotes','sparringNotes','s']];
+  fields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
+  formPhase=p; renderForm();
+}
+
+function syncDurationFromTimes(){
+  const stEl=document.getElementById('f-startTime');
+  const etEl=document.getElementById('f-endTime');
+  if(!stEl || !etEl) return;
+  const st=stEl.value;
+  const et=etEl.value;
+  if(st && et && st.includes(':') && et.includes(':')){
+    const stParts=st.split(':');
+    const etParts=et.split(':');
+    const sh=parseInt(stParts[0],10), sm=parseInt(stParts[1],10);
+    const eh=parseInt(etParts[0],10), em=parseInt(etParts[1],10);
+    if(isNaN(sh)||isNaN(sm)||isNaN(eh)||isNaN(em)) return;
+    let mins=(eh*60+em)-(sh*60+sm);
+    if(mins<=0) mins+=24*60; // 日付を跨ぐ場合（深夜練習など）
+    form.duration=mins;
+    form.startTime=st;
+    form.endTime=et;
+    const durEl=document.getElementById('f-duration');
+    if(durEl) durEl.value=mins;
+  }
+}
+function renderForm(){
+  let html=`<button class="btn-secondary" style="margin-bottom:12px" onclick="showView(editingId?'detail':'list')">← ${t('cancel')}</button>
+  <div class="phase-tabs">
+    <button class="phase-tab ${formPhase==='pre'?'active':''}" onclick="setFormPhase('pre')">${t('pre_session')}</button>
+    <button class="phase-tab ${formPhase==='post'?'active':''}" onclick="setFormPhase('post')">${t('post_session')}</button>
+  </div>`;
+  if(formPhase==='pre'){
+    html+=`<p class="section-title">${t('basic_info')}</p>
+    <label class="lbl">${t('date')}</label><input type="date" id="f-date" value="${esc(form.date)}" oninput="form.date=this.value" />
+    <label class="lbl">${t('type')}</label><select id="f-type" oninput="form.type=this.value">${(()=>{ const opts=SESSION_TYPES_(); if(form.type && !opts.includes(form.type)) opts.unshift(form.type); return opts.map(st=>`<option${form.type===st?' selected':''}>${esc(st)}</option>`).join(''); })()}</select>`;
+    if(fieldOn('startEndTime')) html+=`
+    <div class="row2">
+      <div><label class="lbl">${t('start_time')}</label><input type="time" id="f-startTime" value="${esc(form.startTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
+      <div><label class="lbl">${t('end_time')}</label><input type="time" id="f-endTime" value="${esc(form.endTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
+    </div>`;
+    html+=`
+    <label class="lbl">${t('duration_min')}</label><input type="number" id="f-duration" value="${form.duration}" oninput="form.duration=+this.value" min="1" />
+    ${fieldOn('startEndTime')?`<div style="font-size:11px;color:#aaa;margin-top:4px">${t('time_auto_hint')}</div>`:''}`;
+    if(fieldOn('partner')) html+=`
+    <label class="lbl">${t('partner_gym')}</label><input type="text" id="f-partner" value="${esc(form.partner)}" placeholder="${t('partner_placeholder')}" oninput="form.partner=this.value" />`;
+
+    const hasPreState = fieldOn('goal')||fieldOn('preCondition')||fieldOn('preInjuries');
+    if(hasPreState) html+=`<div class="divider"></div><p class="section-title">${t('pre_state')}</p>`;
+    if(fieldOn('goal')) html+=`
+    <label class="lbl">${t('goal_today')}</label>
+    ${form._carriedGoal?`<div style="font-size:11px;color:#6ea88a;margin-bottom:5px">↩︎ ${t('carry_goal_from')}</div>`:''}
+    <textarea id="f-goal" placeholder="${t('goal_placeholder')}" oninput="form.goal=this.value; form._carriedGoal=false;">${esc(form.goal)}</textarea>`;
+    if(fieldOn('preCondition')) html+=`
+    <label class="lbl">${t('body_condition')}</label><input type="text" id="f-preCondition" value="${esc(form.preCondition)}" placeholder="${t('condition_placeholder')}" oninput="form.preCondition=this.value" />`;
+    if(fieldOn('preInjuries')) html+=`
+    <label class="lbl">${t('injury_pain')}</label><input type="text" id="f-preInjuries" value="${esc(form.preInjuries)}" placeholder="${t('injury_placeholder')}" oninput="form.preInjuries=this.value" />`;
+    if(fieldOn('tags')) html+=`
+    <label class="lbl">${t('tags')}</label>
+    <div class="flex-row" style="margin-bottom:6px"><input type="text" id="f-tag-input" placeholder="${t('tag_placeholder')}" style="flex:1" onkeydown="if(event.key==='Enter')addTag()" /><button class="btn-secondary" onclick="addTag()">${t('add')}</button></div>
+    <div id="tag-list">${renderTags()}</div>`;
+    html+=`
+    <div class="flex-row" style="margin-top:20px"><button class="btn-primary" onclick="savePre()">${editingId?t('update_pre'):t('save_pre')}</button><button class="btn-light" onclick="setFormPhase('post')">${t('input_post')}</button></div>`;
+  }
+  if(formPhase==='post'){
+    const hasContent = fieldOn('content')||fieldOn('techniques')||fieldOn('sparringNotes')||fieldOn('submissions');
+    if(hasContent) html+=`<p class="section-title">${t('content_label')}</p>`;
+    if(fieldOn('content')) html+=`
+    <label class="lbl">${t('content_label')}</label><textarea id="f-content" placeholder="${t('content_placeholder')}" oninput="form.content=this.value">${esc(form.content)}</textarea>`;
+    if(fieldOn('techniques')) html+=`
+    <label class="lbl">${t('techniques_label')}</label>
+    <div id="techniques-list">${renderTechniques()}</div>
+    <button class="btn-secondary" onclick="addTechnique()" style="margin-bottom:12px">${t('add_tech')}</button>`;
+    if(fieldOn('sparringNotes')) html+=`
+    <label class="lbl">${t('sparring_notes')}</label><textarea id="f-sparringNotes" placeholder="${t('sparring_placeholder')}" oninput="form.sparringNotes=this.value">${esc(form.sparringNotes)}</textarea>`;
+    if(fieldOn('submissions')) html+=`
+    <div class="row2"><div><label class="lbl">${t('subs_got_label')}</label><input type="number" value="${form.submissions_got}" min="0" oninput="form.submissions_got=+this.value" /></div><div><label class="lbl">${t('subs_given_label')}</label><input type="number" value="${form.submissions_given}" min="0" oninput="form.submissions_given=+this.value" /></div></div>`;
+
+    const hasReview = fieldOn('corrections')||fieldOn('reinforcements')||fieldOn('nextGoal')||fieldOn('injuries')||fieldOn('rating');
+    if(hasReview) html+=`<div class="divider"></div><p class="section-title">${t('review')}</p>`;
+    if(fieldOn('corrections')) html+=`
+    <label class="lbl">${t('correction_label')}</label><textarea id="f-corrections" placeholder="${t('correction_placeholder')}" oninput="form.corrections=this.value">${esc(form.corrections)}</textarea>`;
+    if(fieldOn('reinforcements')) html+=`
+    <label class="lbl">${t('reinforcement_label')}</label><textarea id="f-reinforcements" placeholder="${t('reinforcement_placeholder')}" oninput="form.reinforcements=this.value">${esc(form.reinforcements)}</textarea>`;
+    if(fieldOn('nextGoal')) html+=`
+    <label class="lbl">${t('next_goal_label')}</label><textarea id="f-nextGoal" placeholder="${t('next_goal_placeholder')}" oninput="form.nextGoal=this.value">${esc(form.nextGoal)}</textarea>`;
+    if(fieldOn('injuries')) html+=`
+    <label class="lbl">${t('body_injury_post_label')}</label><input type="text" id="f-injuries" value="${esc(form.injuries)}" placeholder="${t('injury_post_placeholder')}" oninput="form.injuries=this.value" />`;
+    if(fieldOn('rating')) html+=`
+    <label class="lbl">${t('condition')}</label><div class="rating-row" id="rating-row">${renderRating()}</div>`;
+    if(fieldOn('videos')) html+=`
+    <div class="divider"></div><p class="section-title">${t('video_section')}</p>
+    <div style="font-size:12px;color:#aaa;margin-bottom:8px">${t('video_hint')}</div>
+    <div id="video-list">${renderVideoUrls()}</div>
+    <div class="flex-row" style="margin-bottom:6px"><input type="url" id="f-video-input" placeholder="https://..." style="flex:1" /><button class="btn-secondary" onclick="addVideoUrl()">${t('add')}</button></div>`;
+    html+=`
+    <div class="flex-row" style="margin-top:20px"><button class="btn-primary" onclick="savePost()">${t('complete_save')}</button><button class="btn-secondary accent" onclick="setFormPhase('pre')">${t('back_to_pre')}</button></div>`;
+  }
+  document.getElementById('view-form').innerHTML=html;
+}
+
+function renderTags(){ return (form.tags||[]).map(t=>`<span class="badge badge-blue" style="cursor:pointer" onclick="removeTag('${esc(t)}')">${esc(t)} ×</span>`).join(''); }
+function addTag(){ const input=document.getElementById('f-tag-input'); const t=input.value.trim(); if(t&&!(form.tags||[]).includes(t)) form.tags=[...(form.tags||[]),t]; input.value=''; const el=document.getElementById('tag-list'); if(el) el.innerHTML=renderTags(); }
+function removeTag(t){ form.tags=(form.tags||[]).filter(x=>x!==t); const el=document.getElementById('tag-list'); if(el) el.innerHTML=renderTags(); }
+
+function renderTechniques(){
+  return (form.techniques||[]).map((tk,i)=>`
+    <div class="card" style="margin-bottom:8px">
+      <div class="row2">
+        <div><label class="lbl">${t('tech_name')}</label><input type="text" id="tech-name-${i}" value="${esc(tk.name)}" placeholder="${t('tech_name_placeholder')}" oninput="form.techniques[${i}].name=this.value" /></div>
+        <div><label class="lbl">${t('position')}</label><select id="tech-pos-${i}" onchange="form.techniques[${i}].position=this.value"><option value="">—</option>${POSITIONS_().map(p=>`<option${tk.position===p?' selected':''}>${esc(p)}</option>`).join('')}</select></div>
+      </div>
+      <label class="lbl">${t('memo')}</label>
+      <input type="text" id="tech-notes-${i}" value="${esc(tk.notes)}" placeholder="${t('memo_placeholder')}" oninput="form.techniques[${i}].notes=this.value" />
+      <label class="lbl">${t('tech_video_url')}</label>
+      <div id="tech-video-list-${i}">${renderTechVideoUrls(i)}</div>
+      <div class="flex-row" style="margin-bottom:4px"><input type="url" id="tech-video-input-${i}" placeholder="https://..." style="flex:1;font-size:14px" /><button class="btn-secondary btn-sm" onclick="addTechVideoUrl(${i})">${t('add')}</button></div>
+      <button class="btn-danger" style="margin-top:8px" onclick="removeTechnique(${i})">${t('delete')}</button>
+    </div>`).join('');
+}
+function renderTechVideoUrls(i){
+  return ((form.techniques||[])[i]?.videoUrls||[]).map((url,j)=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <a class="video-link" href="${esc(url)}" target="_blank" style="flex:1;font-size:12px">${esc(url)}</a>
+      <button class="btn-danger" style="padding:3px 8px;font-size:11px" onclick="removeTechVideoUrl(${i},${j})">×</button>
+    </div>`).join('');
+}
+function addTechVideoUrl(i){
+  const input=document.getElementById(`tech-video-input-${i}`);
+  const url=input.value.trim(); if(!url) return;
+  if(!form.techniques[i].videoUrls) form.techniques[i].videoUrls=[];
+  form.techniques[i].videoUrls.push(url); input.value='';
+  const el=document.getElementById(`tech-video-list-${i}`); if(el) el.innerHTML=renderTechVideoUrls(i);
+}
+function removeTechVideoUrl(i,j){
+  form.techniques[i].videoUrls=(form.techniques[i].videoUrls||[]).filter((_,k)=>k!==j);
+  const el=document.getElementById(`tech-video-list-${i}`); if(el) el.innerHTML=renderTechVideoUrls(i);
+}
+function syncTechInputsFromDOM(){
+  (form.techniques||[]).forEach((tk,i)=>{
+    const nameEl=document.getElementById('tech-name-'+i);
+    const posEl=document.getElementById('tech-pos-'+i);
+    const notesEl=document.getElementById('tech-notes-'+i);
+    if(nameEl) tk.name=nameEl.value;
+    if(posEl) tk.position=posEl.value;
+    if(notesEl) tk.notes=notesEl.value;
+  });
+}
+function addTechnique(){ syncTechInputsFromDOM(); form.techniques=[...(form.techniques||[]),{id:Date.now(),name:'',position:'',notes:'',videoUrls:[]}]; const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
+function removeTechnique(i){ syncTechInputsFromDOM(); form.techniques=(form.techniques||[]).filter((_,j)=>j!==i); const el=document.getElementById('techniques-list'); if(el) el.innerHTML=renderTechniques(); }
+
+function renderRating(){ return RATING_LABELS_().map((l,i)=>`<button class="rating-btn${form.rating===i+1?' active':''}" onclick="setRating(${i+1})">${esc(l)}</button>`).join(''); }
+function setRating(r){ form.rating=r; const el=document.getElementById('rating-row'); if(el) el.innerHTML=renderRating(); }
+
+function renderVideoUrls(){ return (form.videoUrls||[]).map((url,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><a class="video-link" href="${esc(url)}" target="_blank" style="flex:1">${esc(url)}</a><button class="btn-danger" style="padding:4px 10px;font-size:11px" onclick="removeVideoUrl(${i})">${t('delete')}</button></div>`).join(''); }
+function addVideoUrl(){ const input=document.getElementById('f-video-input'); const url=input.value.trim(); if(!url) return; form.videoUrls=[...(form.videoUrls||[]),url]; input.value=''; const el=document.getElementById('video-list'); if(el) el.innerHTML=renderVideoUrls(); }
+function removeVideoUrl(i){ form.videoUrls=(form.videoUrls||[]).filter((_,j)=>j!==i); const el=document.getElementById('video-list'); if(el) el.innerHTML=renderVideoUrls(); }
+
+function savePre(){
+  // フォームの現在値を同期
+  const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
+  syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
+  delete form._carriedGoal;
+  if(editingId){
+    // 既存セッションを更新（status は pre のまま）
+    sessions=sessions.map(x=>x.id===editingId?{...form,status:'pre'}:x);
+  } else {
+    // 新規：IDを確定させてから追加
+    const newId=Date.now();
+    form.id=newId;
+    sessions=[{...form,status:'pre'},...sessions];
+    editingId=newId;
+  }
+  save(); showView('list');
+}
+function savePost(){
+  // 全フィールドをIDで確実に同期
+  const syncFields=[
+    ['f-content','content','s'],
+    ['f-sparringNotes','sparringNotes','s'],
+    ['f-corrections','corrections','s'],
+    ['f-reinforcements','reinforcements','s'],
+    ['f-nextGoal','nextGoal','s'],
+    ['f-injuries','injuries','s'],
+  ];
+  syncFields.forEach(([id,key])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
+  delete form._carriedGoal;
+  // 技のinput値をDOMから確実に同期
+  (form.techniques||[]).forEach((t,i)=>{
+    const nameEl=document.getElementById('tech-name-'+i);
+    const posEl=document.getElementById('tech-pos-'+i);
+    const notesEl=document.getElementById('tech-notes-'+i);
+    if(nameEl) t.name=nameEl.value;
+    if(posEl) t.position=posEl.value;
+    if(notesEl) t.notes=notesEl.value;
+  });
+  if(editingId){
+    sessions=sessions.map(x=>x.id===editingId?{...form,status:'done'}:x);
+  } else {
+    const newId=Date.now();
+    form.id=newId;
+    sessions=[{...form,status:'done'},...sessions];
+  }
+  editingId=null; form=newForm(); save(); showView('list');
+}
+
+
+// ── FLOWCHART（柔術フローチャート） ──
+function newFlowchart(){
+  return { id:Date.now(), title:'', startPosition:'', nodes:[], createdAt:new Date().toISOString() };
+}
+function newNode(actor){ return { id:Date.now()+Math.floor(Math.random()*1000), actor:actor||'me', move:'', notes:'', children:[] }; }
+
+function startNewFlowchart(){
+  const fc=newFlowchart();
+  flowcharts=[fc,...flowcharts];
+  saveFlowcharts();
+  selectedFlowchartId=fc.id;
+  fcEditMode=true;
+  showView('flowchart-detail');
+}
+
+function renderFlowchartList(){
+  let html=`<p class="section-title">${t('flowchart_count')} (${flowcharts.length})</p>`;
+  html+=`<div style="font-size:12px;color:#aaa;margin-bottom:14px">${t('flowchart_hint')}</div>`;
+  if(!flowcharts.length){
+    html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🗺️</div><div style="color:#aaa;font-size:14px">${escBr(t('empty_flowchart'))}</div></div>`;
+  }
+  flowcharts.forEach(fc=>{
+    const nodeCount=countNodes(fc.nodes);
+    html+=`<div class="session-item" onclick="openFlowchart(${fc.id})">
+      <div class="flex-between">
+        <div>
+          <div class="session-type">${esc(fc.title||t('untitled'))}</div>
+          ${fc.startPosition?`<div style="font-size:13px;color:#6ea88a;margin-top:3px">▶ ${esc(fc.startPosition)}</div>`:''}
+          <div style="font-size:12px;color:#aaa;margin-top:3px">${nodeCount} ${t('moves_count')}</div>
+        </div>
+        <span style="font-size:11px;color:#b07d3a">${t('open')}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('view-flowchart').innerHTML=html;
+}
+
+function countNodes(nodes){
+  let c=0;
+  (nodes||[]).forEach(n=>{ c++; c+=countNodes(n.children); });
+  return c;
+}
+
+function openFlowchart(id){ selectedFlowchartId=id; showView('flowchart-detail'); }
+function getFlowchart(){ return flowcharts.find(f=>f.id===selectedFlowchartId); }
+
+function findNode(nodes, id){
+  for(const n of nodes){
+    if(n.id===id) return n;
+    const found=findNode(n.children, id);
+    if(found) return found;
+  }
+  return null;
+}
+function findParentArray(nodes, id){
+  for(const n of nodes){
+    if(n.children.some(c=>c.id===id)) return n.children;
+    const found=findParentArray(n.children, id);
+    if(found) return found;
+  }
+  return null;
+}
+
+let fcEditMode = false;
+
+function renderFlowchartDetail(){
+  const fc=getFlowchart();
+  if(!fc){ showView('flowchart'); return; }
+  let html=`<div class="flex-row" style="margin-bottom:16px">
+    <button class="btn-secondary" onclick="showView('flowchart')">← ${t('back_list')}</button>
+    <button class="btn-secondary ${fcEditMode?'accent':''}" onclick="toggleFcEdit()">${fcEditMode?t('fc_done'):t('fc_edit')}</button>
+    <button class="btn-danger" onclick="deleteFlowchart(${fc.id})">${t('delete')}</button>
+  </div>`;
+
+  if(fcEditMode){
+    // 編集モード：ツリー入力
+    html+=`<label class="lbl">${t('title_label')}</label>
+      <input type="text" id="fc-title" value="${esc(fc.title)}" placeholder="${t('fc_title_placeholder')}" oninput="updateFlowchartField('title',this.value)" />
+      <label class="lbl">${t('start_position')}</label>
+      <input type="text" id="fc-start" value="${esc(fc.startPosition)}" placeholder="${t('start_pos_placeholder')}" oninput="updateFlowchartField('startPosition',this.value)" />`;
+    html+=`<div class="divider"></div><p class="section-title">${t('move_flow_edit')}</p>`;
+    html+=`<div style="font-size:12px;color:#aaa;margin-bottom:12px">${t('branch_hint')}</div>`;
+    if(fc.startPosition){
+      html+=`<div class="fc-node start"><span class="fc-actor-badge" style="background:#6ea88a;color:#fff">${t('start')}</span> <b>${esc(fc.startPosition)}</b></div>`;
+    }
+    html+=`<div id="fc-tree">${renderNodes(fc.nodes)}</div>`;
+    html+=`<div class="flex-row" style="margin-top:10px">
+      <button class="btn-secondary accent" onclick="addNode(null,'me')">${t('add_my_move')}</button>
+      <button class="btn-secondary blue" onclick="addNode(null,'opp')">${t('add_opp_move')}</button>
+    </div>`;
+  } else {
+    // 表示モード：グラフ図
+    html+=`<div style="font-size:19px;font-weight:700;margin-bottom:4px">${esc(fc.title||t('untitled'))}</div>`;
+    html+=`<div class="fc-legend">
+      <div class="fc-legend-item"><div class="fc-legend-dot" style="background:#6ea88a"></div>${t('legend_pos')}</div>
+      <div class="fc-legend-item"><div class="fc-legend-dot" style="background:#b07d3a"></div>${t('legend_me')}</div>
+      <div class="fc-legend-item"><div class="fc-legend-dot" style="background:#6ea8c8"></div>${t('legend_opp')}</div>
+    </div>`;
+    if(!fc.startPosition && !fc.nodes.length){
+      html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🗺️</div><div style="color:#aaa;font-size:14px">${escBr(t('empty_fc_detail'))}</div></div>`;
+    } else {
+      html+=renderFlowchartGraph(fc);
+    }
+  }
+  document.getElementById('view-flowchart-detail').innerHTML=html;
+  // グラフ表示モードならピンチズームをセットアップ
+  if(!fcEditMode && (fc.startPosition || fc.nodes.length)){
+    setTimeout(setupPinchZoom, 50);
+  }
+}
+
+function toggleFcEdit(){ fcEditMode=!fcEditMode; renderFlowchartDetail(); }
+
+// ── グラフ図の描画 ──
+function renderFlowchartGraph(fc){
+  // レイアウト計算：各ノードにx,y座標を割り当てる
+  const NODE_W=130, NODE_H=52, H_GAP=20, V_GAP=42;
+
+  // ルート（開始ポジション）を仮想ノードとして扱う
+  const root={ id:'__root__', actor:'pos', move:fc.startPosition||t('start'), children:fc.nodes };
+
+  // 各サブツリーの幅を計算（葉の数ベース）
+  function calcWidth(node){
+    if(!node.children || !node.children.length){ node._w=NODE_W; return NODE_W; }
+    let total=0;
+    node.children.forEach(c=>{ total+=calcWidth(c); });
+    total+=(node.children.length-1)*H_GAP;
+    node._w=Math.max(NODE_W, total);
+    return node._w;
+  }
+  calcWidth(root);
+
+  // x,y座標を割り当て
+  const positioned=[];
+  function assign(node, xLeft, depth){
+    const y=depth*(NODE_H+V_GAP);
+    const cx=xLeft + node._w/2; // このサブツリーの中心
+    node._x=cx - NODE_W/2;
+    node._y=y;
+    positioned.push(node);
+    if(node.children && node.children.length){
+      let childX=xLeft;
+      // 子の合計幅がサブツリー幅より小さい場合は中央寄せ
+      let childrenTotal=0;
+      node.children.forEach(c=>{ childrenTotal+=c._w; });
+      childrenTotal+=(node.children.length-1)*H_GAP;
+      childX = cx - childrenTotal/2;
+      node.children.forEach(c=>{
+        assign(c, childX, depth+1);
+        childX += c._w + H_GAP;
+      });
+    }
+  }
+  assign(root, 0, 0);
+
+  // 全体サイズ
+  let maxX=0, maxY=0;
+  positioned.forEach(n=>{ maxX=Math.max(maxX, n._x+NODE_W); maxY=Math.max(maxY, n._y+NODE_H); });
+  const totalW=maxX+20, totalH=maxY+20;
+
+  // SVGの線
+  let lines='';
+  positioned.forEach(n=>{
+    if(n.children){
+      n.children.forEach(c=>{
+        const x1=n._x+NODE_W/2, y1=n._y+NODE_H;
+        const x2=c._x+NODE_W/2, y2=c._y;
+        const midY=(y1+y2)/2;
+        const color=c.actor==='me'?'#b07d3a':'#6ea8c8';
+        lines+=`<path d="M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}" stroke="${color}" stroke-width="2.5" fill="none" opacity="0.85"/>`;
+        // 矢印
+        lines+=`<polygon points="${x2-4},${y2-6} ${x2+4},${y2-6} ${x2},${y2}" fill="${color}" opacity="1"/>`;
+      });
+    }
+  });
+
+  // ノードのHTML（絶対配置）
+  let nodesHtml='';
+  positioned.forEach(n=>{
+    let cls, label;
+    if(n.id==='__root__'){ cls='fc-gn-pos'; label='◇ '+t('legend_pos'); }
+    else if(n.actor==='me'){ cls='fc-gn-me'; label='🡅 '+t('me'); }
+    else { cls='fc-gn-opp'; label='🡇 '+t('opp'); }
+    nodesHtml+=`<div class="fc-graph-node ${cls}" style="left:${n._x}px;top:${n._y}px;width:${NODE_W}px;min-height:${NODE_H}px">
+      <div class="fc-nlabel">${label}</div>
+      <div style="font-weight:600;line-height:1.25">${esc(n.move||'—')}</div>
+    </div>`;
+  });
+
+  return `<div class="fc-canvas-wrap" id="fc-canvas">
+    <div class="fc-canvas-inner" id="fc-canvas-inner" style="width:${totalW}px;height:${totalH}px">
+      <svg style="position:absolute;top:0;left:0;width:${totalW}px;height:${totalH}px;pointer-events:none">${lines}</svg>
+      ${nodesHtml}
+    </div>
+  </div>
+  <div style="font-size:12px;color:#aaa;text-align:center">${t('pinch_hint')}</div>`;
+}
+
+// ピンチズーム＆パンのセットアップ
+let fcZoom={ scale:1, tx:20, ty:20 };
+function setupPinchZoom(){
+  const canvas=document.getElementById('fc-canvas');
+  const inner=document.getElementById('fc-canvas-inner');
+  if(!canvas || !inner) return;
+
+  // 初期表示：全体が収まるように自動フィット
+  const cw=canvas.clientWidth, ch=canvas.clientHeight;
+  const iw=inner.offsetWidth, ih=inner.offsetHeight;
+  const fitScale=Math.min(cw/(iw+40), ch/(ih+40), 1);
+  fcZoom={ scale:fitScale, tx:(cw-iw*fitScale)/2, ty:20 };
+  applyZoom();
+
+  let startDist=0, startScale=1;
+  let startX=0, startY=0, startTx=0, startTy=0;
+  let mode=null; // 'pan' | 'pinch'
+  let midStart={x:0,y:0};
+
+  function dist(t1,t2){ return Math.hypot(t1.clientX-t2.clientX, t1.clientY-t2.clientY); }
+
+  canvas.ontouchstart=(e)=>{
+    if(e.touches.length===2){
+      mode='pinch';
+      startDist=dist(e.touches[0],e.touches[1]);
+      startScale=fcZoom.scale;
+      const rect=canvas.getBoundingClientRect();
+      midStart={ x:(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left, y:(e.touches[0].clientY+e.touches[1].clientY)/2-rect.top };
+      // ピンチ中心のcanvas内座標を基準に
+      startTx=fcZoom.tx; startTy=fcZoom.ty;
+    } else if(e.touches.length===1){
+      mode='pan';
+      startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+      startTx=fcZoom.tx; startTy=fcZoom.ty;
+    }
+  };
+  canvas.ontouchmove=(e)=>{
+    e.preventDefault();
+    if(mode==='pinch' && e.touches.length===2){
+      const d=dist(e.touches[0],e.touches[1]);
+      let newScale=startScale*(d/startDist);
+      newScale=Math.max(0.2, Math.min(3, newScale));
+      // ピンチ中心を固定してズーム
+      const ratio=newScale/startScale;
+      fcZoom.tx = midStart.x - (midStart.x - startTx)*ratio;
+      fcZoom.ty = midStart.y - (midStart.y - startTy)*ratio;
+      fcZoom.scale=newScale;
+      applyZoom();
+    } else if(mode==='pan' && e.touches.length===1){
+      fcZoom.tx = startTx + (e.touches[0].clientX-startX);
+      fcZoom.ty = startTy + (e.touches[0].clientY-startY);
+      applyZoom();
+    }
+  };
+  canvas.ontouchend=(e)=>{
+    if(e.touches.length===0) mode=null;
+    else if(e.touches.length===1){ mode='pan'; startX=e.touches[0].clientX; startY=e.touches[0].clientY; startTx=fcZoom.tx; startTy=fcZoom.ty; }
+  };
+}
+
+function applyZoom(){
+  const inner=document.getElementById('fc-canvas-inner');
+  if(inner) inner.style.transform=`translate(${fcZoom.tx}px,${fcZoom.ty}px) scale(${fcZoom.scale})`;
+}
+
+function renderNodes(nodes){
+  if(!nodes || !nodes.length) return '';
+  let html='';
+  nodes.forEach(n=>{
+    const actorClass=n.actor==='me'?'me':'opp';
+    const actorBadge=n.actor==='me'?`<span class="fc-actor-badge fc-actor-me">${t('me')}</span>`:`<span class="fc-actor-badge fc-actor-opp">${t('opp')}</span>`;
+    html+=`<div class="fc-node ${actorClass}">
+      <div style="margin-bottom:6px">${actorBadge}</div>
+      <input type="text" value="${esc(n.move)}" placeholder="${t('move_placeholder')}" oninput="updateNode(${n.id},'move',this.value)" style="font-size:14px;margin-bottom:4px" />
+      <input type="text" value="${esc(n.notes)}" placeholder="${t('notes_optional')}" oninput="updateNode(${n.id},'notes',this.value)" style="font-size:13px;color:#666" />
+      <div class="flex-row" style="margin-top:8px;gap:6px">
+        <button class="btn-secondary btn-sm accent" onclick="addNode(${n.id},'me')">${t('add_me')}</button>
+        <button class="btn-secondary btn-sm blue" onclick="addNode(${n.id},'opp')">${t('add_opp')}</button>
+        <button class="btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteNode(${n.id})">${t('delete')}</button>
+      </div>
+      ${n.children && n.children.length?`<div class="fc-children">${renderNodes(n.children)}</div>`:''}
+    </div>`;
+  });
+  return html;
+}
+
+function updateFlowchartField(field, value){
+  const fc=getFlowchart(); if(!fc) return;
+  fc[field]=value;
+  saveFlowcharts();
+}
+function updateNode(nodeId, field, value){
+  const fc=getFlowchart(); if(!fc) return;
+  const node=findNode(fc.nodes, nodeId);
+  if(node){ node[field]=value; saveFlowcharts(); }
+}
+function addNode(parentId, actor){
+  const fc=getFlowchart(); if(!fc) return;
+  const node=newNode(actor);
+  if(parentId===null){ fc.nodes.push(node); }
+  else { const parent=findNode(fc.nodes, parentId); if(parent) parent.children.push(node); }
+  saveFlowcharts();
+  renderFlowchartDetail();
+}
+function deleteNode(nodeId){
+  const fc=getFlowchart(); if(!fc) return;
+  if(!confirm(t('confirm_delete_node'))) return;
+  const rootIdx=fc.nodes.findIndex(n=>n.id===nodeId);
+  if(rootIdx>=0){ fc.nodes.splice(rootIdx,1); }
+  else { const arr=findParentArray(fc.nodes, nodeId); if(arr){ const i=arr.findIndex(n=>n.id===nodeId); if(i>=0) arr.splice(i,1); } }
+  saveFlowcharts();
+  renderFlowchartDetail();
+}
+function deleteFlowchart(id){
+  if(!confirm(t('confirm_delete_flowchart'))) return;
+  flowcharts=flowcharts.filter(f=>f.id!==id);
+  saveFlowcharts();
+  showView('flowchart');
+}
+
+
+
+// ── STATS（統計ダッシュボード） ──
+let statsTab = 'time';      // time | ranking | condition | breakdown
+let statsTimeRange = 'weekly'; // weekly | monthly
+let statsRankMode = 'tech';  // tech | position
+
+function renderStats(){
+  const done = sessions.filter(s=>s.status==='done');
+  let html = `<div class="stats-tabs">
+    <button class="stats-tab ${statsTab==='time'?'active':''}" onclick="setStatsTab('time')">⏱ ${t('stats_time')}</button>
+    <button class="stats-tab ${statsTab==='ranking'?'active':''}" onclick="setStatsTab('ranking')">🏆 ${t('stats_ranking')}</button>
+    <button class="stats-tab ${statsTab==='condition'?'active':''}" onclick="setStatsTab('condition')">📈 ${t('stats_condition')}</button>
+    <button class="stats-tab ${statsTab==='breakdown'?'active':''}" onclick="setStatsTab('breakdown')">🍩 ${t('stats_breakdown')}</button>
+  </div>`;
+
+  if(!done.length){
+    html += `<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">📊</div><div style="color:#aaa;font-size:14px">${escBr(t('stats_empty'))}</div></div>`;
+    document.getElementById('view-stats').innerHTML=html;
+    return;
+  }
+
+  if(statsTab==='time')      html += renderStatsTime(done);
+  if(statsTab==='ranking')   html += renderStatsRanking(done);
+  if(statsTab==='condition') html += renderStatsCondition(done);
+  if(statsTab==='breakdown') html += renderStatsBreakdown(done);
+
+  document.getElementById('view-stats').innerHTML=html;
+}
+
+function setStatsTab(tab){ statsTab=tab; renderStats(); }
+function setStatsTimeRange(r){ statsTimeRange=r; renderStats(); }
+function setStatsRankMode(m){ statsRankMode=m; renderStats(); }
+
+// ① 練習時間グラフ（棒グラフ）
+function renderStatsTime(done){
+  const now=new Date();
+  let buckets=[], labels=[];
+  if(statsTimeRange==='weekly'){
+    // 直近8週
+    for(let i=7;i>=0;i--){
+      const d=new Date(now); d.setDate(now.getDate()-i*7);
+      const {start,end}=weekRange(d);
+      const mins=done.filter(s=>{ const sd=new Date(s.date); return sd>=start && sd<=end; }).reduce((a,b)=>a+(b.duration||0),0);
+      buckets.push(Math.round(mins/60*10)/10);
+      labels.push(`${start.getMonth()+1}/${start.getDate()}`);
+    }
+  } else {
+    // 直近6ヶ月
+    for(let i=5;i>=0;i--){
+      const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const y=d.getFullYear(), m=d.getMonth();
+      const mins=done.filter(s=>{ const sd=new Date(s.date); return sd.getFullYear()===y && sd.getMonth()===m; }).reduce((a,b)=>a+(b.duration||0),0);
+      buckets.push(Math.round(mins/60*10)/10);
+      labels.push(t('cal_months')[m]);
+    }
+  }
+  let html=`<div class="sub-toggle">
+    <button class="${statsTimeRange==='weekly'?'active':''}" onclick="setStatsTimeRange('weekly')">${t('stats_weekly')}</button>
+    <button class="${statsTimeRange==='monthly'?'active':''}" onclick="setStatsTimeRange('monthly')">${t('stats_monthly')}</button>
+  </div>`;
+  html += `<div class="card">${barChartSvg(buckets, labels, t('stats_hours'))}</div>`;
+  return html;
+}
+
+function weekRange(date){
+  const d=new Date(date);
+  let dow=d.getDay(); dow=(dow===0)?6:dow-1; // 月曜始まり
+  const start=new Date(d); start.setDate(d.getDate()-dow); start.setHours(0,0,0,0);
+  const end=new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+  return {start,end};
+}
+
+function barChartSvg(values, labels, unit){
+  const W=320, H=200, padL=30, padB=30, padT=10;
+  const max=Math.max(...values, 1);
+  const chartW=W-padL-10, chartH=H-padB-padT;
+  const barW=chartW/values.length*0.6, gap=chartW/values.length;
+  let bars='', xlabels='';
+  values.forEach((v,i)=>{
+    const bh=(v/max)*chartH;
+    const x=padL + i*gap + (gap-barW)/2;
+    const y=padT+chartH-bh;
+    bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="3" fill="#b07d3a"/>`;
+    if(v>0) bars+=`<text x="${x+barW/2}" y="${y-4}" font-size="9" fill="#666" text-anchor="middle">${v}</text>`;
+    xlabels+=`<text x="${x+barW/2}" y="${H-padB+14}" font-size="9" fill="#999" text-anchor="middle">${labels[i]}</text>`;
+  });
+  // Y軸目盛り
+  let yaxis='';
+  for(let g=0;g<=2;g++){
+    const val=(max/2*g).toFixed(max<5?1:0);
+    const y=padT+chartH-(g/2)*chartH;
+    yaxis+=`<line x1="${padL}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
+    yaxis+=`<text x="${padL-4}" y="${y+3}" font-size="8" fill="#bbb" text-anchor="end">${val}</text>`;
+  }
+  return `<div style="font-size:11px;color:#aaa;margin-bottom:6px">${unit}</div><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${yaxis}${bars}${xlabels}</svg>`;
+}
+
+// ② 技・ポジションランキング
+function renderStatsRanking(done){
+  const map={};
+  done.forEach(s=>{
+    (s.techniques||[]).forEach(tk=>{
+      if(statsRankMode==='tech'){
+        if(!tk.name) return;
+        map[tk.name]=(map[tk.name]||0)+1;
+      } else {
+        if(!tk.position) return;
+        map[tk.position]=(map[tk.position]||0)+1;
+      }
+    });
+  });
+  const ranked=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  let html=`<div class="sub-toggle">
+    <button class="${statsRankMode==='tech'?'active':''}" onclick="setStatsRankMode('tech')">${t('stats_by_tech')}</button>
+    <button class="${statsRankMode==='position'?'active':''}" onclick="setStatsRankMode('position')">${t('stats_by_position')}</button>
+  </div>`;
+  if(!ranked.length){
+    html+=`<div class="card" style="text-align:center;padding:24px;color:#aaa;font-size:14px">${t('stats_no_data')}</div>`;
+    return html;
+  }
+  const max=ranked[0][1];
+  html+=`<div class="card">`;
+  ranked.forEach(([name,count],i)=>{
+    const pct=(count/max)*100;
+    html+=`<div class="rank-row">
+      <div class="rank-num" style="background:${i<3?'#b07d3a':'#ccc'}">${i+1}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar-bg">
+        <div class="rank-bar-fill" style="width:${pct}%"></div>
+        <div class="rank-label">${esc(name)}</div>
+        <div class="rank-count">${count}</div>
+      </div></div>
+    </div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+
+// ③ コンディション推移（折れ線）
+function renderStatsCondition(done){
+  const sorted=[...done].filter(s=>s.rating).sort((a,b)=>a.date.localeCompare(b.date)).slice(-20);
+  if(!sorted.length) return `<div class="card" style="text-align:center;padding:24px;color:#aaa;font-size:14px">${t('stats_no_data')}</div>`;
+  const values=sorted.map(s=>s.rating);
+  const labels=sorted.map(s=>{ const d=new Date(s.date); return `${d.getMonth()+1}/${d.getDate()}`; });
+  const avg=(values.reduce((a,b)=>a+b,0)/values.length).toFixed(1);
+  let html=`<div class="card" style="margin-bottom:10px;text-align:center"><span style="font-size:12px;color:#aaa">${t('stats_avg_condition')}</span><div style="font-size:28px;font-weight:700;color:#b07d3a">${avg}</div></div>`;
+  html+=`<div class="card">${lineChartSvg(values,labels)}</div>`;
+  return html;
+}
+
+function lineChartSvg(values, labels){
+  const W=320,H=200,padL=24,padB=30,padT=10;
+  const chartW=W-padL-10, chartH=H-padB-padT;
+  const max=5, min=1;
+  const pts=values.map((v,i)=>{
+    const x=padL + (values.length===1?chartW/2:(i/(values.length-1))*chartW);
+    const y=padT+chartH-((v-min)/(max-min))*chartH;
+    return {x,y,v};
+  });
+  let grid='';
+  for(let g=1;g<=5;g++){
+    const y=padT+chartH-((g-min)/(max-min))*chartH;
+    grid+=`<line x1="${padL}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
+    grid+=`<text x="${padL-4}" y="${y+3}" font-size="8" fill="#bbb" text-anchor="end">${g}</text>`;
+  }
+  let path=pts.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ');
+  let dots=pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="#b07d3a"/>`).join('');
+  // ラベルは間引き
+  let xlabels='';
+  const step=Math.ceil(pts.length/6);
+  pts.forEach((p,i)=>{ if(i%step===0) xlabels+=`<text x="${p.x}" y="${H-padB+14}" font-size="8" fill="#999" text-anchor="middle">${labels[i]}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${grid}<path d="${path}" stroke="#b07d3a" stroke-width="2" fill="none"/>${dots}${xlabels}</svg>`;
+}
+
+// ④ 種別内訳（ドーナツ）
+function renderStatsBreakdown(done){
+  const map={};
+  done.forEach(s=>{ const k=s.type||'—'; map[k]=(map[k]||0)+1; });
+  const entries=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const total=done.length;
+  const colors=['#b07d3a','#6ea8c8','#6ea88a','#c8a05a','#c0504a','#9b7acc','#d98a2b','#5c93b3'];
+  let html=`<div class="card">${donutSvg(entries,total,colors)}`;
+  html+=`<div style="margin-top:14px">`;
+  entries.forEach(([name,count],i)=>{
+    const pct=Math.round(count/total*100);
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:12px;height:12px;border-radius:3px;background:${colors[i%colors.length]}"></div>
+      <div style="flex:1;font-size:13px">${esc(name)}</div>
+      <div style="font-size:12px;color:#666">${count} (${pct}%)</div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+  return html;
+}
+
+function donutSvg(entries, total, colors){
+  const size=180, cx=size/2, cy=size/2, r=65, sw=28;
+  const circ=2*Math.PI*r;
+  let offset=0, arcs='';
+  entries.forEach(([name,count],i)=>{
+    const frac=count/total;
+    const len=frac*circ;
+    arcs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i%colors.length]}" stroke-width="${sw}" stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset+=len;
+  });
+  return `<svg viewBox="0 0 ${size} ${size}" style="width:180px;height:180px;display:block;margin:0 auto">${arcs}<text x="${cx}" y="${cy-4}" font-size="26" font-weight="700" fill="#1a1a1a" text-anchor="middle">${total}</text><text x="${cx}" y="${cy+16}" font-size="11" fill="#aaa" text-anchor="middle">sessions</text></svg>`;
+}
+
+
+
+// ── SEARCH（横断検索） ──
+let searchQuery = '';
+
+function openSearch(){
+  searchQuery='';
+  showView('search');
+  setTimeout(()=>{ const el=document.getElementById('search-input'); if(el) el.focus(); }, 100);
+}
+
+function onSearchInput(v){
+  searchQuery=v;
+  renderSearchResults();
+}
+
+function renderSearch(){
+  let html=`<div class="search-box">
+    <input type="text" id="search-input" class="search-input" placeholder="${t('search_placeholder')}" value="${esc(searchQuery)}" oninput="onSearchInput(this.value)" />
+  </div>
+  <div id="search-results"></div>`;
+  document.getElementById('view-search').innerHTML=html;
+  renderSearchResults();
+}
+
+function hl(text, q){
+  if(!q) return esc(text);
+  const escaped=esc(text);
+  try {
+    const re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    return escaped.replace(re,'<mark>$1</mark>');
+  } catch { return escaped; }
+}
+
+function matches(text, q){
+  if(!text) return false;
+  return String(text).toLowerCase().includes(q.toLowerCase());
+}
+
+function renderSearchResults(){
+  const el=document.getElementById('search-results');
+  if(!el) return;
+  const q=searchQuery.trim();
+  if(!q){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">🔍<br><br>${t('search_hint')}</div>`;
+    return;
+  }
+
+  // 1. 練習記録を検索（目標・内容・メモ・振り返り・相手・種別・タグ）
+  const recHits = sessions.filter(s=>
+    matches(s.goal,q) || matches(s.content,q) || matches(s.sparringNotes,q) ||
+    matches(s.corrections,q) || matches(s.reinforcements,q) || matches(s.nextGoal,q) ||
+    matches(s.preCondition,q) || matches(s.preInjuries,q) || matches(s.injuries,q) ||
+    matches(s.partner,q) || matches(s.type,q) || matches(s.date,q) ||
+    (s.tags||[]).some(tg=>matches(tg,q)) ||
+    (s.techniques||[]).some(tk=>matches(tk.name,q)||matches(tk.notes,q)||matches(tk.position,q))
+  );
+
+  // 2. 技を検索（技ライブラリ相当）
+  const techMap={};
+  sessions.forEach(s=>{
+    (s.techniques||[]).forEach(tk=>{
+      if(!tk.name) return;
+      if(matches(tk.name,q)||matches(tk.notes,q)||matches(tk.position,q)){
+        if(!techMap[tk.name]) techMap[tk.name]={name:tk.name,count:0};
+        techMap[tk.name].count++;
+      }
+    });
+  });
+  const techHits=Object.values(techMap).sort((a,b)=>b.count-a.count);
+
+  // 3. 動画メモを検索
+  const vidHits = vmemos.filter(v=>
+    matches(v.title,q)||matches(v.note,q)||matches(v.category,q)||matches(v.url,q)
+  );
+
+  // 4. フローチャートを検索（タイトル・開始ポジション・ノード）
+  function nodeMatches(nodes){
+    return (nodes||[]).some(n=> matches(n.move,q)||matches(n.notes,q)||nodeMatches(n.children));
+  }
+  const fcHits = flowcharts.filter(fc=>
+    matches(fc.title,q)||matches(fc.startPosition,q)||nodeMatches(fc.nodes)
+  );
+
+  const total = recHits.length + techHits.length + vidHits.length + fcHits.length;
+  if(total===0){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">${t('search_no_result')}</div>`;
+    return;
+  }
+
+  let html=`<div style="font-size:12px;color:#aaa;margin-bottom:14px">${total} ${t('search_results')}</div>`;
+
+  // 練習記録
+  if(recHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_records')}<span class="search-count">${recHits.length}</span></p>`;
+    recHits.forEach(s=>{
+      // ヒットしたスニペットを探す
+      let snippet='';
+      const fields=[s.goal,s.content,s.sparringNotes,s.corrections,s.reinforcements,s.nextGoal];
+      for(const f of fields){ if(matches(f,q)){ snippet=f; break; } }
+      if(!snippet){
+        const tk=(s.techniques||[]).find(x=>matches(x.name,q)||matches(x.notes,q));
+        if(tk) snippet=tk.name+(tk.notes?' — '+tk.notes:'');
+      }
+      html+=`<div class="session-item" onclick="openDetail(${s.id})">
+        <div class="session-date">${esc(s.date)}</div>
+        <div class="session-type">${hl(s.type||'',q)} <span class="session-meta">— ${s.duration}min</span></div>
+        ${snippet?`<div style="font-size:13px;color:#666;margin-top:5px;line-height:1.4">${hl(snippet.slice(0,90),q)}${snippet.length>90?'…':''}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // 技
+  if(techHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_techniques')}<span class="search-count">${techHits.length}</span></p>`;
+    techHits.forEach(tv=>{
+      html+=`<div class="tech-item" onclick="openTechDetail('${esc(tv.name)}')">
+        <div class="flex-between">
+          <div><div class="tech-name">${hl(tv.name,q)}</div><div class="tech-count">${tv.count}${t('times_practiced')}</div></div>
+          <span style="font-size:11px;color:#b07d3a">${t('open')}</span>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // 動画メモ
+  if(vidHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_videos')}<span class="search-count">${vidHits.length}</span></p>`;
+    vidHits.forEach(v=>{
+      html+=`<div class="session-item" onclick="showView('videos')">
+        <div class="session-type">${hl(v.title||v.url||'',q)}</div>
+        ${v.category?`<div style="margin-top:4px">${badge(hl(v.category,q),'badge-purple')}</div>`:''}
+        ${v.note&&matches(v.note,q)?`<div style="font-size:13px;color:#666;margin-top:5px">${hl(v.note.slice(0,90),q)}${v.note.length>90?'…':''}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // フローチャート
+  if(fcHits.length){
+    html+=`<div class="search-group"><p class="section-title">${t('search_flowcharts')}<span class="search-count">${fcHits.length}</span></p>`;
+    fcHits.forEach(fc=>{
+      html+=`<div class="session-item" onclick="openFlowchart(${fc.id})">
+        <div class="session-type">${hl(fc.title||t('untitled'),q)}</div>
+        ${fc.startPosition?`<div style="font-size:13px;color:#6ea88a;margin-top:3px">▶ ${hl(fc.startPosition,q)}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  el.innerHTML=html;
+}
+
+
+
+// ── IMPORT（メモのコピペ取り込み） ──
+let importText = '';
+let importParsed = [];   // [{date, content, duration, type}]
+let importStep = 'input'; // input | preview
+
+function openImport(){
+  importText=''; importParsed=[]; importStep='input';
+  showView('import');
+}
+
+function renderImport(){
+  let html='';
+  if(importStep==='input'){
+    html=`<button class="btn-secondary" style="margin-bottom:14px" onclick="showView('dashboard')">← ${t('import_back')}</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:19px;font-weight:700">${t('import_title')}</div>
+    </div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:6px;line-height:1.5">${t('import_hint')}</div>
+    <div style="font-size:12px;color:#bbb;margin-bottom:12px">${t('import_split_hint')}</div>
+    <textarea id="import-text" style="min-height:220px;font-size:14px" placeholder="${esc(t('import_placeholder'))}" oninput="importText=this.value">${esc(importText)}</textarea>
+    <div class="flex-row" style="margin-top:14px">
+      <button class="btn-primary" onclick="analyzeImport()">${t('import_analyze')}</button>
+    </div>`;
+  } else {
+    html=`<div class="flex-row" style="margin-bottom:14px">
+      <button class="btn-secondary" onclick="backToImportInput()">← ${t('import_back')}</button>
+    </div>
+    <div style="font-size:19px;font-weight:700;margin-bottom:4px">${t('import_preview')}</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:14px">${importParsed.length} ${t('import_found')}</div>`;
+
+    importParsed.forEach((rec,i)=>{
+      const hasDate = !!rec.date;
+      html+=`<div class="card" style="border-color:${hasDate?'#e8e8e8':'#c8a05a66'}">
+        <div class="row2" style="margin-bottom:8px">
+          <div>
+            <label class="lbl">${t('date')}</label>
+            <input type="date" value="${esc(rec.date||'')}" oninput="importParsed[${i}].date=this.value" style="${hasDate?'':'border-color:#c8a05a'}" />
+            ${!hasDate?`<div style="font-size:11px;color:#c8a05a;margin-top:3px">${t('import_no_date')}</div>`:''}
+          </div>
+          <div>
+            <label class="lbl">${t('type')}</label>
+            <select oninput="importParsed[${i}].type=this.value">
+              ${SESSION_TYPES_().map(st=>`<option${rec.type===st?' selected':''}>${esc(st)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <label class="lbl">${t('duration_min')}</label>
+        <input type="number" value="${rec.duration||60}" min="1" oninput="importParsed[${i}].duration=+this.value" />
+        <label class="lbl">${t('import_content_label')}</label>
+        <textarea style="min-height:80px;font-size:13px" oninput="importParsed[${i}].content=this.value">${esc(rec.content)}</textarea>
+        <button class="btn-danger" style="margin-top:8px" onclick="removeImportRec(${i})">${t('delete')}</button>
+      </div>`;
+    });
+
+    html+=`<div class="flex-row" style="margin-top:16px">
+      <button class="btn-primary" onclick="confirmImport()">${t('import_confirm')}</button>
+      <button class="btn-secondary" onclick="backToImportInput()">${t('cancel')}</button>
+    </div>`;
+  }
+  document.getElementById('view-import').innerHTML=html;
+}
+
+function backToImportInput(){ importStep='input'; renderImport(); }
+function removeImportRec(i){ importParsed.splice(i,1); renderImport(); }
+
+// 日付を検出する（7/10, 2026/7/10, 7月10日, 07-10 など）
+function parseDateFromLine(line){
+  const year=new Date().getFullYear();
+  // 2026/7/10 or 2026-07-10
+  let m=line.match(/(20\d{2})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
+  if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  // 7/10 or 7-10 or 7月10日
+  m=line.match(/(?:^|\s)(\d{1,2})[\/\-月](\d{1,2})日?(?:\s|$|\D)/);
+  if(m){
+    const mo=+m[1], d=+m[2];
+    if(mo>=1&&mo<=12&&d>=1&&d<=31) return `${year}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  return null;
+}
+
+// 練習時間を検出（60分, 60min, 1時間半 など）
+function parseDurationFromText(text){
+  let m=text.match(/(\d+)\s*(?:分|min)/i);
+  if(m) return +m[1];
+  m=text.match(/(\d+)\s*(?:時間|hr|hour)/i);
+  if(m) return +m[1]*60;
+  return null;
+}
+
+// 種別を検出
+function parseTypeFromText(text){
+  const types=SESSION_TYPES_();
+  const lower=text.toLowerCase();
+  // カスタム種別を優先して判定（ユーザーが追加した名前がそのまま含まれていれば採用）
+  for(const ct of customTypes){
+    if(lower.includes(ct.toLowerCase())) return ct;
+  }
+  // 標準種別のキーワード判定
+  const kw=[
+    {k:['スパー','sparring','spar','rola'], t:0},
+    {k:['クラス','class','aula'], t:1},
+    {k:['テクニック','technique','técnica'], t:2},
+    {k:['ドリル','drill'], t:3},
+    {k:['試合','competition','competição'], t:4},
+    {k:['セルフ','solo'], t:5},
+    {k:['ノーギ','no-gi','nogi'], t:6},
+    {k:['筋トレ','strength','musculação','weight'], t:7},
+    {k:['hiit','インターバル'], t:8},
+  ];
+  for(const {k,t:idx} of kw){
+    if(k.some(x=>lower.includes(x.toLowerCase())) && types[idx]) return types[idx];
+  }
+  return types[0];
+}
+
+function analyzeImport(){
+  const el=document.getElementById('import-text');
+  if(el) importText=el.value;
+  const text=importText.trim();
+  if(!text){ alert(t('import_empty')); return; }
+
+  // 空行で大きく分割
+  const blocks=text.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  importParsed=[];
+
+  blocks.forEach(block=>{
+    const lines=block.split('\n');
+    let date=null, contentLines=[];
+    // 各行で日付を探す（最初に見つかったものを採用）
+    lines.forEach((line,idx)=>{
+      const d=parseDateFromLine(line);
+      if(d && !date){
+        date=d;
+        // 日付行から日付部分を除いた残りも内容として拾う
+        const rest=line.replace(/(20\d{2})?[\/\-年]?\d{1,2}[\/\-月]\d{1,2}日?/,'').trim();
+        if(rest) contentLines.push(rest);
+      } else {
+        contentLines.push(line);
+      }
+    });
+    const content=contentLines.join('\n').trim();
+    importParsed.push({
+      date: date,
+      content: content,
+      duration: parseDurationFromText(block) || 60,
+      type: parseTypeFromText(block),
+    });
+  });
+
+  if(!importParsed.length){ alert(t('import_empty')); return; }
+  importStep='preview';
+  renderImport();
+}
+
+function confirmImport(){
+  const today=new Date().toISOString().split('T')[0];
+  let count=0;
+  importParsed.forEach(rec=>{
+    const s=newForm();
+    s.id=Date.now()+Math.floor(Math.random()*10000);
+    s.date=rec.date||today;
+    s.type=rec.type;
+    s.duration=rec.duration||60;
+    s.content=rec.content;
+    s.status='done';
+    sessions=[s,...sessions];
+    count++;
+  });
+  // 日付降順で並べ替え
+  sessions.sort((a,b)=>b.date.localeCompare(a.date));
+  save();
+  alert(`${count} ${t('import_done')}`);
+  importText=''; importParsed=[]; importStep='input';
+  showView('list');
+}
+
+
+
+// ── SETTINGS & BACKUP ──
+let settingsOpenSection = null; // 開いているセクション
+
+function toggleSettingsSection(sec){
+  settingsOpenSection = (settingsOpenSection===sec) ? null : sec;
+  openSettings();
+}
+
+function settingsSection(key, icon, title, contentFn){
+  const isOpen = settingsOpenSection===key;
+  return `<div style="border:1px solid ${isOpen?'#b07d3a33':'#eee'};border-radius:8px;margin-bottom:8px;overflow:hidden">
+    <div onclick="toggleSettingsSection('${key}')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;background:${isOpen?'#b07d3a0a':'#fff'}">
+      <span style="font-size:14px;font-weight:600;color:#1a1a1a">${icon} ${title}</span>
+      <span style="font-size:12px;color:#b07d3a;transform:rotate(${isOpen?'90':'0'}deg);transition:transform 0.15s">▶</span>
+    </div>
+    ${isOpen?`<div style="padding:4px 14px 14px;border-top:1px solid #f0f0f0">${contentFn()}</div>`:''}
+  </div>`;
+}
+
+function openSettings(){
+  const r=sessions.length, v=vmemos.length, f=flowcharts.length;
+  const statsLine=t('backup_stats').replace('{r}',r).replace('{v}',v).replace('{f}',f);
+
+  const langContent = ()=>`
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+      <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
+      <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
+    </div>`;
+
+  const marksContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('marks_hint')}</div>
+    ${renderMarkSettings()}`;
+
+  const carryContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('carry_goal_hint')}</div>
+    <div onclick="toggleCarryGoal()" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid ${carryOverGoal?'#b07d3a33':'#eee'};background:${carryOverGoal?'#b07d3a0a':'#fafafa'};border-radius:6px;cursor:pointer">
+      <span style="font-size:13px;color:${carryOverGoal?'#1a1a1a':'#bbb'}">${t('carry_goal_title')}</span>
+      <span style="font-size:16px">${carryOverGoal?'✅':'⬜️'}</span>
+    </div>`;
+
+  const fieldsContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('fields_hint')}</div>
+    ${renderFieldToggles()}
+    <button class="btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="resetFields()">${t('fields_reset')}</button>`;
+
+  const importContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('import_hint')}</div>
+    <button class="btn-secondary" style="width:100%" onclick="closeModal(); openImport();">📝 ${t('import_title')}</button>`;
+
+  const backupContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 8px;line-height:1.5">${t('backup_hint')}</div>
+    <div style="background:#fff9ec;border:1px solid #c8a05a44;border-radius:6px;padding:10px;font-size:12px;color:#8a6d3b;margin-bottom:12px;line-height:1.5">${t('backup_warning')}</div>
+    <div style="font-size:12px;color:#666;margin-bottom:10px">${statsLine}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-primary" onclick="exportData()">${t('backup_export')}</button>
+      <button class="btn-secondary" onclick="document.getElementById('import-file').click()">${t('backup_import')}</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)" />
+    </div>`;
+
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-title" style="margin-bottom:16px">${t('settings_title')}</div>
+    ${settingsSection('lang','🌐',t('lang_label'),langContent)}
+    ${settingsSection('types','🏷',t('types_title'),renderTypeSettings)}
+    ${settingsSection('marks','📅',t('marks_title'),marksContent)}
+    ${settingsSection('carry','🎯',t('carry_goal_title'),carryContent)}
+    ${settingsSection('fields','📝',t('fields_title'),fieldsContent)}
+    ${settingsSection('import','📥',t('import_title'),importContent)}
+    ${settingsSection('backup','💾',t('backup_title'),backupContent)}
+    <div style="margin-top:16px"><button class="btn-secondary" style="width:100%" onclick="closeModal()">${t('cancel')}</button></div>`;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+function renderTypeSettings(){
+  const defaults = t('session_types');
+  const visibleDefaults = defaults.filter(ty=>!hiddenTypes.includes(ty));
+  const hiddenDefaults = defaults.filter(ty=>hiddenTypes.includes(ty));
+
+  let html = `<div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('types_hint')}</div>`;
+
+  const typeRow = (ty, isCustom)=>{
+    const n = countTypeUsage(ty);
+    const usage = n>0 ? `<span style="font-size:11px;color:#aaa;margin-left:6px">${t('type_used_count').replace('{n}', n)}</span>` : '';
+    const fn = isCustom ? `removeCustomType('${esc(ty)}')` : `hideDefaultType('${esc(ty)}')`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid ${isCustom?'#b07d3a33':'#eee'};background:${isCustom?'#b07d3a0a':'#fafafa'};border-radius:6px;margin-bottom:5px">
+      <span style="font-size:13px">${esc(ty)}${usage}</span>
+      <button class="btn-danger" style="padding:3px 9px;font-size:11px" onclick="${fn}">${t('delete')}</button>
+    </div>`;
+  };
+
+  // 標準の種別（削除可）
+  if(visibleDefaults.length){
+    html += `<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${t('type_default')}</div>`;
+    html += `<div style="margin-bottom:14px">${visibleDefaults.map(ty=>typeRow(ty,false)).join('')}</div>`;
+  }
+
+  // 追加した種別
+  if(customTypes.length){
+    html += `<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${t('type_custom')}</div>`;
+    html += `<div style="margin-bottom:14px">${customTypes.map(ty=>typeRow(ty,true)).join('')}</div>`;
+  }
+
+  // 非表示にした標準種別（復元可）
+  if(hiddenDefaults.length){
+    html += `<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${t('type_hidden')}</div>`;
+    html += `<div style="margin-bottom:14px">`;
+    hiddenDefaults.forEach(ty=>{
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px dashed #ddd;background:#fafafa;border-radius:6px;margin-bottom:5px;opacity:0.7">
+        <span style="font-size:13px;color:#aaa">${esc(ty)}</span>
+        <button class="btn-secondary" style="padding:3px 9px;font-size:11px" onclick="restoreDefaultType('${esc(ty)}')">${t('type_restore')}</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // 追加フォーム
+  html += `<div style="display:flex;gap:6px">
+    <input type="text" id="new-type-input" placeholder="${t('type_add_placeholder')}" style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomType();}" />
+    <button class="btn-primary" style="padding:10px 16px;font-size:13px" onclick="addCustomType()">${t('add')}</button>
+  </div>`;
+  return html;
+}
+
+function renderMarkSettings(){
+  let html='';
+  ALL_TYPES_().forEach(type=>{
+    const cur=getMarkForType(type);
+    html+=`<div style="margin-bottom:10px">
+      <div style="font-size:12px;color:#666;margin-bottom:5px">${esc(type)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${MARK_OPTIONS.map(m=>`<button onclick="setTypeMark('${esc(type)}','${m}')" style="width:36px;height:36px;font-size:17px;border-radius:8px;cursor:pointer;background:${cur===m?'#b07d3a18':'#fff'};border:1.5px solid ${cur===m?'#b07d3a':'#e8e8e8'};padding:0;display:flex;align-items:center;justify-content:center">${m}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderFieldToggles(){
+  const groups = [
+    { label: t('pre_session'), keys: [
+      ['startEndTime', t('start_time')+' / '+t('end_time')],
+      ['partner', t('partner_gym')],
+      ['goal', t('goal_today')],
+      ['preCondition', t('body_condition')],
+      ['preInjuries', t('injury_pain')],
+      ['tags', t('tags')],
+    ]},
+    { label: t('post_session'), keys: [
+      ['content', t('content_label')],
+      ['techniques', t('techniques_label')],
+      ['sparringNotes', t('sparring_notes')],
+      ['submissions', t('subs_got')+' / '+t('subs_given')],
+      ['corrections', t('correction')],
+      ['reinforcements', t('reinforcement')],
+      ['nextGoal', t('next_goal')],
+      ['injuries', t('body_injury_post')],
+      ['rating', t('condition')],
+      ['videos', t('video_section')],
+    ]},
+  ];
+  let html='';
+  groups.forEach(g=>{
+    html+=`<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin:10px 0 6px">${g.label}</div>`;
+    g.keys.forEach(([key,label])=>{
+      const on=fieldOn(key);
+      html+=`<div onclick="toggleField('${key}')" style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:1px solid ${on?'#b07d3a33':'#eee'};background:${on?'#b07d3a0a':'#fafafa'};border-radius:6px;margin-bottom:5px;cursor:pointer">
+        <span style="font-size:13px;color:${on?'#1a1a1a':'#bbb'}">${esc(label)}</span>
+        <span style="font-size:16px">${on?'✅':'⬜️'}</span>
+      </div>`;
+    });
+  });
+  return html;
+}
+
+function resetFields(){
+  fieldSettings = { ...FIELD_DEFAULTS };
+  saveFieldSettings();
+  openSettings();
+}
+
+function exportData(){
+  const data = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    lang: currentLang,
+    sessions: sessions,
+    vmemos: vmemos,
+    flowcharts: flowcharts,
+    customTypes: customTypes,
+    hiddenTypes: hiddenTypes,
+    typeMarks: typeMarks,
+    fieldSettings: fieldSettings,
+    carryOverGoal: carryOverGoal,
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `bjj-log-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert(t('backup_export_done'));
+}
+
+function importData(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data || (!data.sessions && !data.vmemos && !data.flowcharts)) throw new Error('invalid');
+      if(!confirm(t('backup_import_confirm'))) { input.value=''; return; }
+      sessions   = Array.isArray(data.sessions)   ? data.sessions   : [];
+      vmemos     = Array.isArray(data.vmemos)     ? data.vmemos     : [];
+      flowcharts = Array.isArray(data.flowcharts) ? data.flowcharts : [];
+      if(Array.isArray(data.customTypes)) { customTypes = data.customTypes; saveCustomTypes(); }
+      if(Array.isArray(data.hiddenTypes)) { hiddenTypes = data.hiddenTypes; saveHiddenTypes(); }
+      if(data.typeMarks && typeof data.typeMarks==='object') { typeMarks = data.typeMarks; saveTypeMarks(); }
+      if(data.fieldSettings && typeof data.fieldSettings==='object') { fieldSettings = { ...FIELD_DEFAULTS, ...data.fieldSettings }; saveFieldSettings(); }
+      if(typeof data.carryOverGoal==='boolean') { carryOverGoal = data.carryOverGoal; localStorage.setItem('bjj_carry_goal', String(carryOverGoal)); }
+      save(); saveVmemos(); saveFlowcharts();
+      cleanBrTags();
+      alert(t('backup_import_done'));
+      closeModal();
+      showView('dashboard');
+    } catch(err) {
+      alert(t('backup_import_error'));
+    }
+    input.value='';
+  };
+  reader.onerror = ()=>{ alert(t('backup_import_error')); input.value=''; };
+  reader.readAsText(file);
+}
+
+
+applyStaticLabels();
+render();
+</script>
+</body>
+</html>
