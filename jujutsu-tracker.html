@@ -234,12 +234,17 @@ const I18N = {
     positions:['マウント','バック','ガード','ハーフガード','サイドコントロール','ニーオンベリー','タートル','スタンド'],
     ratings:['😞 最悪','😕 イマイチ','😐 普通','🙂 良い','😄 最高'],
     rating_short:['最悪','イマイチ','普通','良い','最高'],
-    session_types:['スパーリング','クラス','テクニック','ドリル','試合','セルフトレーニング','ノーギ','武器術'],
+    session_types:['スパーリング','クラス','テクニック','ドリル','試合','セルフトレーニング','ノーギ','筋トレ','HIIT'],
     // 確認ダイアログ
     confirm_delete_record:'この記録を削除しますか？', confirm_delete_video:'この動画メモを削除しますか？',
     confirm_delete_flowchart:'このフローチャートを削除しますか？', confirm_delete_node:'この動き（以下の枝も含む）を削除しますか？',
     alert_url_title:'URLかタイトルを入力してください',
     lang_label:'言語 / Language', copy_url:'URLをコピー', partner_placeholder:'例: 山田先生',
+    types_title:'練習種別', types_hint:'よく使う練習種別を自由に追加できます。標準の種別は削除できません。',
+    type_add_placeholder:'新しい種別名', type_exists:'すでに存在する種別です', type_in_use:'この種別は記録で使われています。削除しますか？',
+    type_default:'標準', type_custom:'追加した種別', type_hidden:'非表示にした種別', type_restore:'戻す',
+    type_in_use_n:'この種別は{n}件の記録で使われています。選択肢から削除しますか？（過去の記録はそのまま残ります）',
+    type_used_count:'{n}件',
     marks_title:'カレンダーのマーク', marks_hint:'練習種別ごとにカレンダーに表示するマークを選べます。',
     carry_goal_title:'次回目標の引き継ぎ', carry_goal_hint:'前回の「次回の目標」を、新しい記録の目標欄に自動で入れます。',
     carry_goal_from:'前回の目標を引き継ぎました',
@@ -322,11 +327,16 @@ const I18N = {
     positions:['Mount','Back','Guard','Half guard','Side control','Knee on belly','Turtle','Standing'],
     ratings:['😞 Terrible','😕 Poor','😐 OK','🙂 Good','😄 Great'],
     rating_short:['Terrible','Poor','OK','Good','Great'],
-    session_types:['Sparring','Class','Technique','Drills','Competition','Solo training','No-Gi','Weapons'],
+    session_types:['Sparring','Class','Technique','Drills','Competition','Solo training','No-Gi','Strength','HIIT'],
     confirm_delete_record:'Delete this record?', confirm_delete_video:'Delete this video memo?',
     confirm_delete_flowchart:'Delete this flowchart?', confirm_delete_node:'Delete this move (and its branches)?',
     alert_url_title:'Please enter a URL or title',
     lang_label:'言語 / Language', copy_url:'Copy URL', partner_placeholder:'e.g. Coach Yamada',
+    types_title:'Session types', types_hint:'Add your own session types. Default types cannot be removed.',
+    type_add_placeholder:'New type name', type_exists:'This type already exists', type_in_use:'This type is used in records. Remove anyway?',
+    type_default:'Default', type_custom:'Custom types', type_hidden:'Hidden types', type_restore:'Restore',
+    type_in_use_n:'This type is used in {n} record(s). Remove from the list? (Existing records stay unchanged)',
+    type_used_count:'{n} records',
     marks_title:'Calendar marks', marks_hint:'Choose a mark to show on the calendar for each session type.',
     carry_goal_title:'Carry over next goal', carry_goal_hint:'Automatically fill the goal field with your previous \'next goal\'.',
     carry_goal_from:'Carried over from last session',
@@ -409,11 +419,16 @@ const I18N = {
     positions:['Montada','Costas','Guarda','Meia-guarda','100 quilos','Joelho na barriga','Tartaruga','Em pé'],
     ratings:['😞 Péssimo','😕 Ruim','😐 OK','🙂 Bom','😄 Ótimo'],
     rating_short:['Péssimo','Ruim','OK','Bom','Ótimo'],
-    session_types:['Sparring','Aula','Técnica','Drills','Competição','Treino solo','No-Gi','Armas'],
+    session_types:['Sparring','Aula','Técnica','Drills','Competição','Treino solo','No-Gi','Musculação','HIIT'],
     confirm_delete_record:'Excluir este registro?', confirm_delete_video:'Excluir este vídeo?',
     confirm_delete_flowchart:'Excluir este fluxograma?', confirm_delete_node:'Excluir este movimento (e seus ramos)?',
     alert_url_title:'Insira uma URL ou título',
     lang_label:'言語 / Language', copy_url:'Copiar URL', partner_placeholder:'ex: Prof. Silva',
+    types_title:'Tipos de treino', types_hint:'Adicione seus próprios tipos de treino. Os padrões não podem ser removidos.',
+    type_add_placeholder:'Novo tipo', type_exists:'Este tipo já existe', type_in_use:'Este tipo é usado em registros. Remover mesmo assim?',
+    type_default:'Padrão', type_custom:'Tipos personalizados', type_hidden:'Tipos ocultos', type_restore:'Restaurar',
+    type_in_use_n:'Este tipo é usado em {n} registro(s). Remover da lista? (Os registros existentes permanecem)',
+    type_used_count:'{n} registros',
     marks_title:'Marcas do calendário', marks_hint:'Escolha uma marca para exibir no calendário para cada tipo de treino.',
     carry_goal_title:'Herdar próxima meta', carry_goal_hint:'Preencher automaticamente a meta com a \'próxima meta\' do treino anterior.',
     carry_goal_from:'Herdado do treino anterior',
@@ -513,7 +528,64 @@ const VMEMO_KEY   = 'jujutsu_vmemos';
 const FLOWCHART_KEY = 'jujutsu_flowcharts';
 function POSITIONS_(){ return t('positions'); }
 function RATING_LABELS_(){ return t('ratings'); }
-function SESSION_TYPES_(){ return t('session_types'); }
+// カスタム種別（ユーザーが追加したもの）
+let customTypes = (()=>{
+  try { return JSON.parse(localStorage.getItem('bjj_custom_types') || '[]'); } catch { return []; }
+})();
+function saveCustomTypes(){ try { localStorage.setItem('bjj_custom_types', JSON.stringify(customTypes)); } catch{} }
+// 非表示にした標準種別
+let hiddenTypes = (()=>{
+  try { return JSON.parse(localStorage.getItem('bjj_hidden_types') || '[]'); } catch { return []; }
+})();
+function saveHiddenTypes(){ try { localStorage.setItem('bjj_hidden_types', JSON.stringify(hiddenTypes)); } catch{} }
+
+function SESSION_TYPES_(){
+  const defaults = t('session_types').filter(ty=>!hiddenTypes.includes(ty));
+  return [...defaults, ...customTypes];
+}
+// 記録で使われている種別も含めた全種別（表示用・統計用）
+function ALL_TYPES_(){
+  const used = [...new Set(sessions.map(s=>s.type).filter(Boolean))];
+  const all = [...t('session_types'), ...customTypes, ...used];
+  return [...new Set(all)];
+}
+function countTypeUsage(name){ return sessions.filter(s=>s.type===name).length; }
+
+function hideDefaultType(name){
+  const n = countTypeUsage(name);
+  if(n > 0 && !confirm(t('type_in_use_n').replace('{n}', n))) return;
+  if(!hiddenTypes.includes(name)) hiddenTypes.push(name);
+  saveHiddenTypes();
+  openSettings();
+  render();
+}
+function restoreDefaultType(name){
+  hiddenTypes = hiddenTypes.filter(x=>x!==name);
+  saveHiddenTypes();
+  openSettings();
+  render();
+}
+function addCustomType(){
+  const input=document.getElementById('new-type-input');
+  if(!input) return;
+  const name=input.value.trim();
+  if(!name){ return; }
+  const all=SESSION_TYPES_();
+  if(all.includes(name)){ alert(t('type_exists')); input.value=''; return; }
+  customTypes.push(name);
+  saveCustomTypes();
+  input.value='';
+  openSettings();
+  render();
+}
+function removeCustomType(name){
+  const n = countTypeUsage(name);
+  if(n > 0 && !confirm(t('type_in_use_n').replace('{n}', n))) return;
+  customTypes = customTypes.filter(x=>x!==name);
+  saveCustomTypes();
+  openSettings();
+  render();
+}
 
 let sessions = [];
 let vmemos = []; // 参考動画メモ
@@ -1047,7 +1119,7 @@ function renderForm(){
   if(formPhase==='pre'){
     html+=`<p class="section-title">${t('basic_info')}</p>
     <label class="lbl">${t('date')}</label><input type="date" id="f-date" value="${esc(form.date)}" oninput="form.date=this.value" />
-    <label class="lbl">${t('type')}</label><select id="f-type" oninput="form.type=this.value">${SESSION_TYPES_().map(st=>`<option${form.type===st?' selected':''}>${esc(st)}</option>`).join('')}</select>`;
+    <label class="lbl">${t('type')}</label><select id="f-type" oninput="form.type=this.value">${(()=>{ const opts=SESSION_TYPES_(); if(form.type && !opts.includes(form.type)) opts.unshift(form.type); return opts.map(st=>`<option${form.type===st?' selected':''}>${esc(st)}</option>`).join(''); })()}</select>`;
     if(fieldOn('startEndTime')) html+=`
     <div class="row2">
       <div><label class="lbl">${t('start_time')}</label><input type="time" id="f-startTime" value="${esc(form.startTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
@@ -1994,7 +2066,12 @@ function parseDurationFromText(text){
 // 種別を検出
 function parseTypeFromText(text){
   const types=SESSION_TYPES_();
-  // 日本語キーワードでも判定
+  const lower=text.toLowerCase();
+  // カスタム種別を優先して判定（ユーザーが追加した名前がそのまま含まれていれば採用）
+  for(const ct of customTypes){
+    if(lower.includes(ct.toLowerCase())) return ct;
+  }
+  // 標準種別のキーワード判定
   const kw=[
     {k:['スパー','sparring','spar','rola'], t:0},
     {k:['クラス','class','aula'], t:1},
@@ -2003,10 +2080,11 @@ function parseTypeFromText(text){
     {k:['試合','competition','competição'], t:4},
     {k:['セルフ','solo'], t:5},
     {k:['ノーギ','no-gi','nogi'], t:6},
+    {k:['筋トレ','strength','musculação','weight'], t:7},
+    {k:['hiit','インターバル'], t:8},
   ];
-  const lower=text.toLowerCase();
   for(const {k,t:idx} of kw){
-    if(k.some(x=>lower.includes(x.toLowerCase()))) return types[idx];
+    if(k.some(x=>lower.includes(x.toLowerCase())) && types[idx]) return types[idx];
   }
   return types[0];
 }
@@ -2137,6 +2215,7 @@ function openSettings(){
   document.getElementById('modal-box').innerHTML=`
     <div class="modal-title" style="margin-bottom:16px">${t('settings_title')}</div>
     ${settingsSection('lang','🌐',t('lang_label'),langContent)}
+    ${settingsSection('types','🏷',t('types_title'),renderTypeSettings)}
     ${settingsSection('marks','📅',t('marks_title'),marksContent)}
     ${settingsSection('carry','🎯',t('carry_goal_title'),carryContent)}
     ${settingsSection('fields','📝',t('fields_title'),fieldsContent)}
@@ -2146,9 +2225,59 @@ function openSettings(){
   document.getElementById('modal-bg').classList.remove('hidden');
 }
 
+function renderTypeSettings(){
+  const defaults = t('session_types');
+  const visibleDefaults = defaults.filter(ty=>!hiddenTypes.includes(ty));
+  const hiddenDefaults = defaults.filter(ty=>hiddenTypes.includes(ty));
+
+  let html = `<div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('types_hint')}</div>`;
+
+  const typeRow = (ty, isCustom)=>{
+    const n = countTypeUsage(ty);
+    const usage = n>0 ? `<span style="font-size:11px;color:#aaa;margin-left:6px">${t('type_used_count').replace('{n}', n)}</span>` : '';
+    const fn = isCustom ? `removeCustomType('${esc(ty)}')` : `hideDefaultType('${esc(ty)}')`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid ${isCustom?'#b07d3a33':'#eee'};background:${isCustom?'#b07d3a0a':'#fafafa'};border-radius:6px;margin-bottom:5px">
+      <span style="font-size:13px">${esc(ty)}${usage}</span>
+      <button class="btn-danger" style="padding:3px 9px;font-size:11px" onclick="${fn}">${t('delete')}</button>
+    </div>`;
+  };
+
+  // 標準の種別（削除可）
+  if(visibleDefaults.length){
+    html += `<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${t('type_default')}</div>`;
+    html += `<div style="margin-bottom:14px">${visibleDefaults.map(ty=>typeRow(ty,false)).join('')}</div>`;
+  }
+
+  // 追加した種別
+  if(customTypes.length){
+    html += `<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${t('type_custom')}</div>`;
+    html += `<div style="margin-bottom:14px">${customTypes.map(ty=>typeRow(ty,true)).join('')}</div>`;
+  }
+
+  // 非表示にした標準種別（復元可）
+  if(hiddenDefaults.length){
+    html += `<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${t('type_hidden')}</div>`;
+    html += `<div style="margin-bottom:14px">`;
+    hiddenDefaults.forEach(ty=>{
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px dashed #ddd;background:#fafafa;border-radius:6px;margin-bottom:5px;opacity:0.7">
+        <span style="font-size:13px;color:#aaa">${esc(ty)}</span>
+        <button class="btn-secondary" style="padding:3px 9px;font-size:11px" onclick="restoreDefaultType('${esc(ty)}')">${t('type_restore')}</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // 追加フォーム
+  html += `<div style="display:flex;gap:6px">
+    <input type="text" id="new-type-input" placeholder="${t('type_add_placeholder')}" style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomType();}" />
+    <button class="btn-primary" style="padding:10px 16px;font-size:13px" onclick="addCustomType()">${t('add')}</button>
+  </div>`;
+  return html;
+}
+
 function renderMarkSettings(){
   let html='';
-  SESSION_TYPES_().forEach(type=>{
+  ALL_TYPES_().forEach(type=>{
     const cur=getMarkForType(type);
     html+=`<div style="margin-bottom:10px">
       <div style="font-size:12px;color:#666;margin-bottom:5px">${esc(type)}</div>
@@ -2205,12 +2334,17 @@ function resetFields(){
 
 function exportData(){
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     lang: currentLang,
     sessions: sessions,
     vmemos: vmemos,
     flowcharts: flowcharts,
+    customTypes: customTypes,
+    hiddenTypes: hiddenTypes,
+    typeMarks: typeMarks,
+    fieldSettings: fieldSettings,
+    carryOverGoal: carryOverGoal,
   };
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -2238,6 +2372,11 @@ function importData(input){
       sessions   = Array.isArray(data.sessions)   ? data.sessions   : [];
       vmemos     = Array.isArray(data.vmemos)     ? data.vmemos     : [];
       flowcharts = Array.isArray(data.flowcharts) ? data.flowcharts : [];
+      if(Array.isArray(data.customTypes)) { customTypes = data.customTypes; saveCustomTypes(); }
+      if(Array.isArray(data.hiddenTypes)) { hiddenTypes = data.hiddenTypes; saveHiddenTypes(); }
+      if(data.typeMarks && typeof data.typeMarks==='object') { typeMarks = data.typeMarks; saveTypeMarks(); }
+      if(data.fieldSettings && typeof data.fieldSettings==='object') { fieldSettings = { ...FIELD_DEFAULTS, ...data.fieldSettings }; saveFieldSettings(); }
+      if(typeof data.carryOverGoal==='boolean') { carryOverGoal = data.carryOverGoal; localStorage.setItem('bjj_carry_goal', String(carryOverGoal)); }
       save(); saveVmemos(); saveFlowcharts();
       cleanBrTags();
       alert(t('backup_import_done'));
