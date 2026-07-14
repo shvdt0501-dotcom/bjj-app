@@ -240,6 +240,8 @@ const I18N = {
     confirm_delete_flowchart:'このフローチャートを削除しますか？', confirm_delete_node:'この動き（以下の枝も含む）を削除しますか？',
     alert_url_title:'URLかタイトルを入力してください',
     lang_label:'言語 / Language', copy_url:'URLをコピー', partner_placeholder:'例: 山田先生',
+    fields_title:'表示項目', fields_hint:'練習記録の入力画面に表示する項目を選べます。日付・種別・時間は常に表示されます。',
+    fields_reset:'すべて表示に戻す',
     settings_title:'設定', backup_title:'バックアップ', backup_hint:'すべてのデータをファイルに保存します。機種変更や将来のアプリ移行に使えます。',
     backup_export:'📤 データを書き出す', backup_import:'📥 データを読み込む',
     backup_export_done:'データを書き出しました', backup_import_confirm:'現在のデータは上書きされます。読み込みますか？',
@@ -322,6 +324,8 @@ const I18N = {
     confirm_delete_flowchart:'Delete this flowchart?', confirm_delete_node:'Delete this move (and its branches)?',
     alert_url_title:'Please enter a URL or title',
     lang_label:'言語 / Language', copy_url:'Copy URL', partner_placeholder:'e.g. Coach Yamada',
+    fields_title:'Visible fields', fields_hint:'Choose which fields appear in the session form. Date, type and duration are always shown.',
+    fields_reset:'Show all',
     settings_title:'Settings', backup_title:'Backup', backup_hint:'Save all your data to a file. Useful for device changes or future app migration.',
     backup_export:'📤 Export data', backup_import:'📥 Import data',
     backup_export_done:'Data exported', backup_import_confirm:'Current data will be overwritten. Continue?',
@@ -404,6 +408,8 @@ const I18N = {
     confirm_delete_flowchart:'Excluir este fluxograma?', confirm_delete_node:'Excluir este movimento (e seus ramos)?',
     alert_url_title:'Insira uma URL ou título',
     lang_label:'言語 / Language', copy_url:'Copiar URL', partner_placeholder:'ex: Prof. Silva',
+    fields_title:'Campos visíveis', fields_hint:'Escolha quais campos aparecem no formulário. Data, tipo e duração sempre aparecem.',
+    fields_reset:'Mostrar todos',
     settings_title:'Configurações', backup_title:'Backup', backup_hint:'Salve todos os seus dados em um arquivo. Útil para troca de aparelho ou migração futura.',
     backup_export:'📤 Exportar dados', backup_import:'📥 Importar dados',
     backup_export_done:'Dados exportados', backup_import_confirm:'Os dados atuais serão substituídos. Continuar?',
@@ -425,6 +431,22 @@ const I18N = {
 };
 
 let currentLang = localStorage.getItem('bjj_lang') || 'ja';
+
+// 表示項目の設定（ユーザーがON/OFF可能）
+const FIELD_DEFAULTS = {
+  startEndTime: true, partner: true, goal: true, preCondition: true, preInjuries: true, tags: true,
+  content: true, techniques: true, sparringNotes: true, submissions: true,
+  corrections: true, reinforcements: true, nextGoal: true, injuries: true, rating: true, videos: true,
+};
+let fieldSettings = (()=>{
+  try {
+    const saved = JSON.parse(localStorage.getItem('bjj_fields') || '{}');
+    return { ...FIELD_DEFAULTS, ...saved };
+  } catch { return { ...FIELD_DEFAULTS }; }
+})();
+function saveFieldSettings(){ try { localStorage.setItem('bjj_fields', JSON.stringify(fieldSettings)); } catch{} }
+function toggleField(key){ fieldSettings[key]=!fieldSettings[key]; saveFieldSettings(); openSettings(); }
+function fieldOn(key){ return fieldSettings[key]!==false; }
 function t(key){ return (I18N[currentLang] && I18N[currentLang][key]!==undefined) ? I18N[currentLang][key] : (I18N.ja[key]!==undefined?I18N.ja[key]:key); }
 function setLang(lang){
   currentLang=lang;
@@ -976,41 +998,65 @@ function renderForm(){
   if(formPhase==='pre'){
     html+=`<p class="section-title">${t('basic_info')}</p>
     <label class="lbl">${t('date')}</label><input type="date" id="f-date" value="${esc(form.date)}" oninput="form.date=this.value" />
-    <label class="lbl">${t('type')}</label><select id="f-type" oninput="form.type=this.value">${SESSION_TYPES_().map(st=>`<option${form.type===st?' selected':''}>${esc(st)}</option>`).join('')}</select>
+    <label class="lbl">${t('type')}</label><select id="f-type" oninput="form.type=this.value">${SESSION_TYPES_().map(st=>`<option${form.type===st?' selected':''}>${esc(st)}</option>`).join('')}</select>`;
+    if(fieldOn('startEndTime')) html+=`
     <div class="row2">
       <div><label class="lbl">${t('start_time')}</label><input type="time" id="f-startTime" value="${esc(form.startTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
       <div><label class="lbl">${t('end_time')}</label><input type="time" id="f-endTime" value="${esc(form.endTime)}" onchange="setTimeout(syncDurationFromTimes, 50)" onblur="setTimeout(syncDurationFromTimes, 50)" /></div>
-    </div>
+    </div>`;
+    html+=`
     <label class="lbl">${t('duration_min')}</label><input type="number" id="f-duration" value="${form.duration}" oninput="form.duration=+this.value" min="1" />
-    <div style="font-size:11px;color:#aaa;margin-top:4px">${t('time_auto_hint')}</div>
-    <label class="lbl">${t('partner_gym')}</label><input type="text" id="f-partner" value="${esc(form.partner)}" placeholder="${t('partner_placeholder')}" oninput="form.partner=this.value" />
-    <div class="divider"></div><p class="section-title">${t('pre_state')}</p>
-    <label class="lbl">${t('goal_today')}</label><textarea id="f-goal" placeholder="${t('goal_placeholder')}" oninput="form.goal=this.value">${esc(form.goal)}</textarea>
-    <label class="lbl">${t('body_condition')}</label><input type="text" id="f-preCondition" value="${esc(form.preCondition)}" placeholder="${t('condition_placeholder')}" oninput="form.preCondition=this.value" />
-    <label class="lbl">${t('injury_pain')}</label><input type="text" id="f-preInjuries" value="${esc(form.preInjuries)}" placeholder="${t('injury_placeholder')}" oninput="form.preInjuries=this.value" />
+    ${fieldOn('startEndTime')?`<div style="font-size:11px;color:#aaa;margin-top:4px">${t('time_auto_hint')}</div>`:''}`;
+    if(fieldOn('partner')) html+=`
+    <label class="lbl">${t('partner_gym')}</label><input type="text" id="f-partner" value="${esc(form.partner)}" placeholder="${t('partner_placeholder')}" oninput="form.partner=this.value" />`;
+
+    const hasPreState = fieldOn('goal')||fieldOn('preCondition')||fieldOn('preInjuries');
+    if(hasPreState) html+=`<div class="divider"></div><p class="section-title">${t('pre_state')}</p>`;
+    if(fieldOn('goal')) html+=`
+    <label class="lbl">${t('goal_today')}</label><textarea id="f-goal" placeholder="${t('goal_placeholder')}" oninput="form.goal=this.value">${esc(form.goal)}</textarea>`;
+    if(fieldOn('preCondition')) html+=`
+    <label class="lbl">${t('body_condition')}</label><input type="text" id="f-preCondition" value="${esc(form.preCondition)}" placeholder="${t('condition_placeholder')}" oninput="form.preCondition=this.value" />`;
+    if(fieldOn('preInjuries')) html+=`
+    <label class="lbl">${t('injury_pain')}</label><input type="text" id="f-preInjuries" value="${esc(form.preInjuries)}" placeholder="${t('injury_placeholder')}" oninput="form.preInjuries=this.value" />`;
+    if(fieldOn('tags')) html+=`
     <label class="lbl">${t('tags')}</label>
     <div class="flex-row" style="margin-bottom:6px"><input type="text" id="f-tag-input" placeholder="${t('tag_placeholder')}" style="flex:1" onkeydown="if(event.key==='Enter')addTag()" /><button class="btn-secondary" onclick="addTag()">${t('add')}</button></div>
-    <div id="tag-list">${renderTags()}</div>
+    <div id="tag-list">${renderTags()}</div>`;
+    html+=`
     <div class="flex-row" style="margin-top:20px"><button class="btn-primary" onclick="savePre()">${editingId?t('update_pre'):t('save_pre')}</button><button class="btn-light" onclick="setFormPhase('post')">${t('input_post')}</button></div>`;
   }
   if(formPhase==='post'){
-    html+=`<p class="section-title">${t('content_label')}</p>
-    <label class="lbl">${t('content_label')}</label><textarea id="f-content" placeholder="${t('content_placeholder')}" oninput="form.content=this.value">${esc(form.content)}</textarea>
+    const hasContent = fieldOn('content')||fieldOn('techniques')||fieldOn('sparringNotes')||fieldOn('submissions');
+    if(hasContent) html+=`<p class="section-title">${t('content_label')}</p>`;
+    if(fieldOn('content')) html+=`
+    <label class="lbl">${t('content_label')}</label><textarea id="f-content" placeholder="${t('content_placeholder')}" oninput="form.content=this.value">${esc(form.content)}</textarea>`;
+    if(fieldOn('techniques')) html+=`
     <label class="lbl">${t('techniques_label')}</label>
     <div id="techniques-list">${renderTechniques()}</div>
-    <button class="btn-secondary" onclick="addTechnique()" style="margin-bottom:12px">${t('add_tech')}</button>
-    <label class="lbl">${t('sparring_notes')}</label><textarea id="f-sparringNotes" placeholder="${t('sparring_placeholder')}" oninput="form.sparringNotes=this.value">${esc(form.sparringNotes)}</textarea>
-    <div class="row2"><div><label class="lbl">${t('subs_got_label')}</label><input type="number" value="${form.submissions_got}" min="0" oninput="form.submissions_got=+this.value" /></div><div><label class="lbl">${t('subs_given_label')}</label><input type="number" value="${form.submissions_given}" min="0" oninput="form.submissions_given=+this.value" /></div></div>
-    <div class="divider"></div><p class="section-title">${t('review')}</p>
-    <label class="lbl">${t('correction_label')}</label><textarea id="f-corrections" placeholder="${t('correction_placeholder')}" oninput="form.corrections=this.value">${esc(form.corrections)}</textarea>
-    <label class="lbl">${t('reinforcement_label')}</label><textarea id="f-reinforcements" placeholder="${t('reinforcement_placeholder')}" oninput="form.reinforcements=this.value">${esc(form.reinforcements)}</textarea>
-    <label class="lbl">${t('next_goal_label')}</label><textarea id="f-nextGoal" placeholder="${t('next_goal_placeholder')}" oninput="form.nextGoal=this.value">${esc(form.nextGoal)}</textarea>
-    <label class="lbl">${t('body_injury_post_label')}</label><input type="text" id="f-injuries" value="${esc(form.injuries)}" placeholder="${t('injury_post_placeholder')}" oninput="form.injuries=this.value" />
-    <label class="lbl">${t('condition')}</label><div class="rating-row" id="rating-row">${renderRating()}</div>
+    <button class="btn-secondary" onclick="addTechnique()" style="margin-bottom:12px">${t('add_tech')}</button>`;
+    if(fieldOn('sparringNotes')) html+=`
+    <label class="lbl">${t('sparring_notes')}</label><textarea id="f-sparringNotes" placeholder="${t('sparring_placeholder')}" oninput="form.sparringNotes=this.value">${esc(form.sparringNotes)}</textarea>`;
+    if(fieldOn('submissions')) html+=`
+    <div class="row2"><div><label class="lbl">${t('subs_got_label')}</label><input type="number" value="${form.submissions_got}" min="0" oninput="form.submissions_got=+this.value" /></div><div><label class="lbl">${t('subs_given_label')}</label><input type="number" value="${form.submissions_given}" min="0" oninput="form.submissions_given=+this.value" /></div></div>`;
+
+    const hasReview = fieldOn('corrections')||fieldOn('reinforcements')||fieldOn('nextGoal')||fieldOn('injuries')||fieldOn('rating');
+    if(hasReview) html+=`<div class="divider"></div><p class="section-title">${t('review')}</p>`;
+    if(fieldOn('corrections')) html+=`
+    <label class="lbl">${t('correction_label')}</label><textarea id="f-corrections" placeholder="${t('correction_placeholder')}" oninput="form.corrections=this.value">${esc(form.corrections)}</textarea>`;
+    if(fieldOn('reinforcements')) html+=`
+    <label class="lbl">${t('reinforcement_label')}</label><textarea id="f-reinforcements" placeholder="${t('reinforcement_placeholder')}" oninput="form.reinforcements=this.value">${esc(form.reinforcements)}</textarea>`;
+    if(fieldOn('nextGoal')) html+=`
+    <label class="lbl">${t('next_goal_label')}</label><textarea id="f-nextGoal" placeholder="${t('next_goal_placeholder')}" oninput="form.nextGoal=this.value">${esc(form.nextGoal)}</textarea>`;
+    if(fieldOn('injuries')) html+=`
+    <label class="lbl">${t('body_injury_post_label')}</label><input type="text" id="f-injuries" value="${esc(form.injuries)}" placeholder="${t('injury_post_placeholder')}" oninput="form.injuries=this.value" />`;
+    if(fieldOn('rating')) html+=`
+    <label class="lbl">${t('condition')}</label><div class="rating-row" id="rating-row">${renderRating()}</div>`;
+    if(fieldOn('videos')) html+=`
     <div class="divider"></div><p class="section-title">${t('video_section')}</p>
     <div style="font-size:12px;color:#aaa;margin-bottom:8px">${t('video_hint')}</div>
     <div id="video-list">${renderVideoUrls()}</div>
-    <div class="flex-row" style="margin-bottom:6px"><input type="url" id="f-video-input" placeholder="https://..." style="flex:1" /><button class="btn-secondary" onclick="addVideoUrl()">${t('add')}</button></div>
+    <div class="flex-row" style="margin-bottom:6px"><input type="url" id="f-video-input" placeholder="https://..." style="flex:1" /><button class="btn-secondary" onclick="addVideoUrl()">${t('add')}</button></div>`;
+    html+=`
     <div class="flex-row" style="margin-top:20px"><button class="btn-primary" onclick="savePost()">${t('complete_save')}</button><button class="btn-secondary accent" onclick="setFormPhase('pre')">${t('back_to_pre')}</button></div>`;
   }
   document.getElementById('view-form').innerHTML=html;
@@ -1994,6 +2040,15 @@ function openSettings(){
     <div style="border-top:1px solid #ececec;margin:18px 0"></div>
 
     <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('fields_title')}</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px;line-height:1.5">${t('fields_hint')}</div>
+      ${renderFieldToggles()}
+      <button class="btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="resetFields()">${t('fields_reset')}</button>
+    </div>
+
+    <div style="border-top:1px solid #ececec;margin:18px 0"></div>
+
+    <div>
       <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('import_title')}</div>
       <div style="font-size:12px;color:#aaa;margin-bottom:10px;line-height:1.5">${t('import_hint')}</div>
       <button class="btn-secondary" style="width:100%" onclick="closeModal(); openImport();">📝 ${t('import_title')}</button>
@@ -2015,6 +2070,49 @@ function openSettings(){
 
     <div style="margin-top:18px"><button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button></div>`;
   document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+function renderFieldToggles(){
+  const groups = [
+    { label: t('pre_session'), keys: [
+      ['startEndTime', t('start_time')+' / '+t('end_time')],
+      ['partner', t('partner_gym')],
+      ['goal', t('goal_today')],
+      ['preCondition', t('body_condition')],
+      ['preInjuries', t('injury_pain')],
+      ['tags', t('tags')],
+    ]},
+    { label: t('post_session'), keys: [
+      ['content', t('content_label')],
+      ['techniques', t('techniques_label')],
+      ['sparringNotes', t('sparring_notes')],
+      ['submissions', t('subs_got')+' / '+t('subs_given')],
+      ['corrections', t('correction')],
+      ['reinforcements', t('reinforcement')],
+      ['nextGoal', t('next_goal')],
+      ['injuries', t('body_injury_post')],
+      ['rating', t('condition')],
+      ['videos', t('video_section')],
+    ]},
+  ];
+  let html='';
+  groups.forEach(g=>{
+    html+=`<div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin:10px 0 6px">${g.label}</div>`;
+    g.keys.forEach(([key,label])=>{
+      const on=fieldOn(key);
+      html+=`<div onclick="toggleField('${key}')" style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:1px solid ${on?'#b07d3a33':'#eee'};background:${on?'#b07d3a0a':'#fafafa'};border-radius:6px;margin-bottom:5px;cursor:pointer">
+        <span style="font-size:13px;color:${on?'#1a1a1a':'#bbb'}">${esc(label)}</span>
+        <span style="font-size:16px">${on?'✅':'⬜️'}</span>
+      </div>`;
+    });
+  });
+  return html;
+}
+
+function resetFields(){
+  fieldSettings = { ...FIELD_DEFAULTS };
+  saveFieldSettings();
+  openSettings();
 }
 
 function exportData(){
