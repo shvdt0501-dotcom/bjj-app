@@ -240,6 +240,9 @@ const I18N = {
     confirm_delete_flowchart:'このフローチャートを削除しますか？', confirm_delete_node:'この動き（以下の枝も含む）を削除しますか？',
     alert_url_title:'URLかタイトルを入力してください',
     lang_label:'言語 / Language', copy_url:'URLをコピー', partner_placeholder:'例: 山田先生',
+    marks_title:'カレンダーのマーク', marks_hint:'練習種別ごとにカレンダーに表示するマークを選べます。',
+    carry_goal_title:'次回目標の引き継ぎ', carry_goal_hint:'前回の「次回の目標」を、新しい記録の目標欄に自動で入れます。',
+    carry_goal_from:'前回の目標を引き継ぎました',
     fields_title:'表示項目', fields_hint:'練習記録の入力画面に表示する項目を選べます。日付・種別・時間は常に表示されます。',
     fields_reset:'すべて表示に戻す',
     settings_title:'設定', backup_title:'バックアップ', backup_hint:'すべてのデータをファイルに保存します。機種変更や将来のアプリ移行に使えます。',
@@ -324,6 +327,9 @@ const I18N = {
     confirm_delete_flowchart:'Delete this flowchart?', confirm_delete_node:'Delete this move (and its branches)?',
     alert_url_title:'Please enter a URL or title',
     lang_label:'言語 / Language', copy_url:'Copy URL', partner_placeholder:'e.g. Coach Yamada',
+    marks_title:'Calendar marks', marks_hint:'Choose a mark to show on the calendar for each session type.',
+    carry_goal_title:'Carry over next goal', carry_goal_hint:'Automatically fill the goal field with your previous \'next goal\'.',
+    carry_goal_from:'Carried over from last session',
     fields_title:'Visible fields', fields_hint:'Choose which fields appear in the session form. Date, type and duration are always shown.',
     fields_reset:'Show all',
     settings_title:'Settings', backup_title:'Backup', backup_hint:'Save all your data to a file. Useful for device changes or future app migration.',
@@ -408,6 +414,9 @@ const I18N = {
     confirm_delete_flowchart:'Excluir este fluxograma?', confirm_delete_node:'Excluir este movimento (e seus ramos)?',
     alert_url_title:'Insira uma URL ou título',
     lang_label:'言語 / Language', copy_url:'Copiar URL', partner_placeholder:'ex: Prof. Silva',
+    marks_title:'Marcas do calendário', marks_hint:'Escolha uma marca para exibir no calendário para cada tipo de treino.',
+    carry_goal_title:'Herdar próxima meta', carry_goal_hint:'Preencher automaticamente a meta com a \'próxima meta\' do treino anterior.',
+    carry_goal_from:'Herdado do treino anterior',
     fields_title:'Campos visíveis', fields_hint:'Escolha quais campos aparecem no formulário. Data, tipo e duração sempre aparecem.',
     fields_reset:'Mostrar todos',
     settings_title:'Configurações', backup_title:'Backup', backup_hint:'Salve todos os seus dados em um arquivo. Útil para troca de aparelho ou migração futura.',
@@ -445,6 +454,27 @@ let fieldSettings = (()=>{
   } catch { return { ...FIELD_DEFAULTS }; }
 })();
 function saveFieldSettings(){ try { localStorage.setItem('bjj_fields', JSON.stringify(fieldSettings)); } catch{} }
+
+// 種別ごとのカレンダーマーク設定
+const MARK_OPTIONS = ['🥋','🤼','💪','🔥','⚡','🏆','📚','🎯','⭐️','💥','🩸','🧘'];
+const DEFAULT_MARK = '🥋';
+let typeMarks = (()=>{
+  try { return JSON.parse(localStorage.getItem('bjj_type_marks') || '{}'); } catch { return {}; }
+})();
+function saveTypeMarks(){ try { localStorage.setItem('bjj_type_marks', JSON.stringify(typeMarks)); } catch{} }
+function getMarkForType(type){ return typeMarks[type] || DEFAULT_MARK; }
+function setTypeMark(type, mark){ typeMarks[type]=mark; saveTypeMarks(); openSettings(); render(); }
+
+// 次回目標の引き継ぎ設定
+let carryOverGoal = (()=>{
+  const v = localStorage.getItem('bjj_carry_goal');
+  return v === null ? true : v === 'true';
+})();
+function toggleCarryGoal(){
+  carryOverGoal = !carryOverGoal;
+  localStorage.setItem('bjj_carry_goal', String(carryOverGoal));
+  openSettings();
+}
 function toggleField(key){ fieldSettings[key]=!fieldSettings[key]; saveFieldSettings(); openSettings(); }
 function fieldOn(key){ return fieldSettings[key]!==false; }
 function t(key){ return (I18N[currentLang] && I18N[currentLang][key]!==undefined) ? I18N[currentLang][key] : (I18N.ja[key]!==undefined?I18N.ja[key]:key); }
@@ -626,7 +656,14 @@ function renderCalendarHtml(year, month) {
   const todayStr = today.toISOString().split('T')[0];
 
   // 練習した日をSetで管理（date文字列）
-  const trainingDates = new Set(sessions.map(s=>s.date));
+  // 日付 → その日の練習種別リスト
+  const dateMarks = {};
+  sessions.forEach(s=>{
+    if(!dateMarks[s.date]) dateMarks[s.date]=[];
+    const mark=getMarkForType(s.type);
+    if(!dateMarks[s.date].includes(mark)) dateMarks[s.date].push(mark);
+  });
+  const trainingDates = new Set(Object.keys(dateMarks));
 
   // 月の最初の日・最後の日
   const firstDay = new Date(year, month, 1);
@@ -669,12 +706,12 @@ function renderCalendarHtml(year, month) {
     const dow = (startDow + d - 1) % 7; // 0=月〜6=日
     const textColor = dow===5 ? '#6ea8c8' : dow===6 ? '#c0504a' : '#1a1a1a';
 
-    let cellStyle = `font-size:12px;padding:2px 0;border-radius:6px;cursor:${hasTrain?'pointer':'default'}`;
+    let cellStyle = `font-size:12px;padding:3px 0;border-radius:6px;min-height:34px;cursor:${hasTrain?'pointer':'default'}`;
     if(isToday) cellStyle += ';background:#b07d3a18;border:1.5px solid #b07d3a';
 
     cal += `<div style="${cellStyle}" ${hasTrain?`onclick="calDayTap('${dateStr}')"`:''}>
       <div style="color:${textColor};font-weight:${isToday?700:400}">${d}</div>
-      <div style="font-size:14px;line-height:1">${hasTrain?'🥋':''}</div>
+      <div style="font-size:${(dateMarks[dateStr]||[]).length>1?'9':'13'}px;line-height:1.1">${hasTrain?dateMarks[dateStr].slice(0,2).join(''):''}</div>
     </div>`;
   }
 
@@ -958,7 +995,19 @@ function deleteVmemo(id){
 }
 
 // ── FORM ──
-function startNew(){ editingId=null; form=newForm(); formPhase='pre'; showView('form'); }
+function startNew(){
+  editingId=null;
+  form=newForm();
+  // 前回の完了済みセッションから「次回の目標」を引き継ぐ
+  if(carryOverGoal){
+    const lastDone = sessions
+      .filter(s=>s.status==='done' && s.nextGoal && s.nextGoal.trim())
+      .sort((a,b)=>b.date.localeCompare(a.date))[0];
+    if(lastDone){ form.goal = lastDone.nextGoal; form._carriedGoal = true; }
+  }
+  formPhase='pre';
+  showView('form');
+}
 function startEdit(id,phase){ const s=sessions.find(x=>x.id===id); if(!s) return; editingId=id; form=JSON.parse(JSON.stringify(s)); formPhase=phase||'pre'; showView('form'); }
 function deleteSession(id){ if(!confirm(t('confirm_delete_record'))) return; sessions=sessions.filter(x=>x.id!==id); save(); showView('list'); }
 
@@ -1013,7 +1062,9 @@ function renderForm(){
     const hasPreState = fieldOn('goal')||fieldOn('preCondition')||fieldOn('preInjuries');
     if(hasPreState) html+=`<div class="divider"></div><p class="section-title">${t('pre_state')}</p>`;
     if(fieldOn('goal')) html+=`
-    <label class="lbl">${t('goal_today')}</label><textarea id="f-goal" placeholder="${t('goal_placeholder')}" oninput="form.goal=this.value">${esc(form.goal)}</textarea>`;
+    <label class="lbl">${t('goal_today')}</label>
+    ${form._carriedGoal?`<div style="font-size:11px;color:#6ea88a;margin-bottom:5px">↩︎ ${t('carry_goal_from')}</div>`:''}
+    <textarea id="f-goal" placeholder="${t('goal_placeholder')}" oninput="form.goal=this.value; form._carriedGoal=false;">${esc(form.goal)}</textarea>`;
     if(fieldOn('preCondition')) html+=`
     <label class="lbl">${t('body_condition')}</label><input type="text" id="f-preCondition" value="${esc(form.preCondition)}" placeholder="${t('condition_placeholder')}" oninput="form.preCondition=this.value" />`;
     if(fieldOn('preInjuries')) html+=`
@@ -1123,6 +1174,7 @@ function savePre(){
   // フォームの現在値を同期
   const syncFields=[['f-date','date','s'],['f-type','type','s'],['f-startTime','startTime','s'],['f-endTime','endTime','s'],['f-duration','duration','n'],['f-partner','partner','s'],['f-goal','goal','s'],['f-preCondition','preCondition','s'],['f-preInjuries','preInjuries','s']];
   syncFields.forEach(([id,key,t])=>{ const el=document.getElementById(id); if(el) form[key]=t==='n'?+el.value:el.value; });
+  delete form._carriedGoal;
   if(editingId){
     // 既存セッションを更新（status は pre のまま）
     sessions=sessions.map(x=>x.id===editingId?{...form,status:'pre'}:x);
@@ -1146,6 +1198,7 @@ function savePost(){
     ['f-injuries','injuries','s'],
   ];
   syncFields.forEach(([id,key])=>{ const el=document.getElementById(id); if(el) form[key]=el.value; });
+  delete form._carriedGoal;
   // 技のinput値をDOMから確実に同期
   (form.techniques||[]).forEach((t,i)=>{
     const nameEl=document.getElementById('tech-name-'+i);
@@ -2022,54 +2075,89 @@ function confirmImport(){
 
 
 // ── SETTINGS & BACKUP ──
+let settingsOpenSection = null; // 開いているセクション
+
+function toggleSettingsSection(sec){
+  settingsOpenSection = (settingsOpenSection===sec) ? null : sec;
+  openSettings();
+}
+
+function settingsSection(key, icon, title, contentFn){
+  const isOpen = settingsOpenSection===key;
+  return `<div style="border:1px solid ${isOpen?'#b07d3a33':'#eee'};border-radius:8px;margin-bottom:8px;overflow:hidden">
+    <div onclick="toggleSettingsSection('${key}')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;background:${isOpen?'#b07d3a0a':'#fff'}">
+      <span style="font-size:14px;font-weight:600;color:#1a1a1a">${icon} ${title}</span>
+      <span style="font-size:12px;color:#b07d3a;transform:rotate(${isOpen?'90':'0'}deg);transition:transform 0.15s">▶</span>
+    </div>
+    ${isOpen?`<div style="padding:4px 14px 14px;border-top:1px solid #f0f0f0">${contentFn()}</div>`:''}
+  </div>`;
+}
+
 function openSettings(){
   const r=sessions.length, v=vmemos.length, f=flowcharts.length;
   const statsLine=t('backup_stats').replace('{r}',r).replace('{v}',v).replace('{f}',f);
+
+  const langContent = ()=>`
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+      <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
+      <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
+    </div>`;
+
+  const marksContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('marks_hint')}</div>
+    ${renderMarkSettings()}`;
+
+  const carryContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('carry_goal_hint')}</div>
+    <div onclick="toggleCarryGoal()" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid ${carryOverGoal?'#b07d3a33':'#eee'};background:${carryOverGoal?'#b07d3a0a':'#fafafa'};border-radius:6px;cursor:pointer">
+      <span style="font-size:13px;color:${carryOverGoal?'#1a1a1a':'#bbb'}">${t('carry_goal_title')}</span>
+      <span style="font-size:16px">${carryOverGoal?'✅':'⬜️'}</span>
+    </div>`;
+
+  const fieldsContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('fields_hint')}</div>
+    ${renderFieldToggles()}
+    <button class="btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="resetFields()">${t('fields_reset')}</button>`;
+
+  const importContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 10px;line-height:1.5">${t('import_hint')}</div>
+    <button class="btn-secondary" style="width:100%" onclick="closeModal(); openImport();">📝 ${t('import_title')}</button>`;
+
+  const backupContent = ()=>`
+    <div style="font-size:12px;color:#aaa;margin:8px 0 8px;line-height:1.5">${t('backup_hint')}</div>
+    <div style="background:#fff9ec;border:1px solid #c8a05a44;border-radius:6px;padding:10px;font-size:12px;color:#8a6d3b;margin-bottom:12px;line-height:1.5">${t('backup_warning')}</div>
+    <div style="font-size:12px;color:#666;margin-bottom:10px">${statsLine}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-primary" onclick="exportData()">${t('backup_export')}</button>
+      <button class="btn-secondary" onclick="document.getElementById('import-file').click()">${t('backup_import')}</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)" />
+    </div>`;
+
   document.getElementById('modal-box').innerHTML=`
-    <div class="modal-title">${t('settings_title')}</div>
-
-    <div style="margin-top:18px">
-      <div style="font-size:13px;font-weight:700;margin-bottom:8px">${t('lang_label')}</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
-        <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
-        <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
-      </div>
-    </div>
-
-    <div style="border-top:1px solid #ececec;margin:18px 0"></div>
-
-    <div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('fields_title')}</div>
-      <div style="font-size:12px;color:#aaa;margin-bottom:10px;line-height:1.5">${t('fields_hint')}</div>
-      ${renderFieldToggles()}
-      <button class="btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="resetFields()">${t('fields_reset')}</button>
-    </div>
-
-    <div style="border-top:1px solid #ececec;margin:18px 0"></div>
-
-    <div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('import_title')}</div>
-      <div style="font-size:12px;color:#aaa;margin-bottom:10px;line-height:1.5">${t('import_hint')}</div>
-      <button class="btn-secondary" style="width:100%" onclick="closeModal(); openImport();">📝 ${t('import_title')}</button>
-    </div>
-
-    <div style="border-top:1px solid #ececec;margin:18px 0"></div>
-
-    <div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:6px">${t('backup_title')}</div>
-      <div style="font-size:12px;color:#aaa;margin-bottom:8px;line-height:1.5">${t('backup_hint')}</div>
-      <div style="background:#fff9ec;border:1px solid #c8a05a44;border-radius:6px;padding:10px;font-size:12px;color:#8a6d3b;margin-bottom:12px;line-height:1.5">${t('backup_warning')}</div>
-      <div style="font-size:12px;color:#666;margin-bottom:10px">${statsLine}</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn-primary" onclick="exportData()">${t('backup_export')}</button>
-        <button class="btn-secondary" onclick="document.getElementById('import-file').click()">${t('backup_import')}</button>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)" />
-      </div>
-    </div>
-
-    <div style="margin-top:18px"><button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button></div>`;
+    <div class="modal-title" style="margin-bottom:16px">${t('settings_title')}</div>
+    ${settingsSection('lang','🌐',t('lang_label'),langContent)}
+    ${settingsSection('marks','📅',t('marks_title'),marksContent)}
+    ${settingsSection('carry','🎯',t('carry_goal_title'),carryContent)}
+    ${settingsSection('fields','📝',t('fields_title'),fieldsContent)}
+    ${settingsSection('import','📥',t('import_title'),importContent)}
+    ${settingsSection('backup','💾',t('backup_title'),backupContent)}
+    <div style="margin-top:16px"><button class="btn-secondary" style="width:100%" onclick="closeModal()">${t('cancel')}</button></div>`;
   document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+function renderMarkSettings(){
+  let html='';
+  SESSION_TYPES_().forEach(type=>{
+    const cur=getMarkForType(type);
+    html+=`<div style="margin-bottom:10px">
+      <div style="font-size:12px;color:#666;margin-bottom:5px">${esc(type)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${MARK_OPTIONS.map(m=>`<button onclick="setTypeMark('${esc(type)}','${m}')" style="width:36px;height:36px;font-size:17px;border-radius:8px;cursor:pointer;background:${cur===m?'#b07d3a18':'#fff'};border:1.5px solid ${cur===m?'#b07d3a':'#e8e8e8'};padding:0;display:flex;align-items:center;justify-content:center">${m}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  return html;
 }
 
 function renderFieldToggles(){
