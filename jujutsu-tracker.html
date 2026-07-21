@@ -123,6 +123,12 @@
     .search-group { margin-bottom: 18px; }
     .search-count { font-size: 11px; color: #aaa; margin-left: 6px; font-weight: 400; }
     mark { background: #b07d3a33; color: #1a1a1a; padding: 0 2px; border-radius: 2px; }
+    /* 完了トースト */
+    #done-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%) scale(0.9); background: #fff; border: 1px solid #b07d3a33; border-radius: 16px; padding: 28px 34px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); z-index: 300; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; }
+    #done-toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    #done-toast .dt-icon { font-size: 44px; line-height: 1; margin-bottom: 10px; }
+    #done-toast .dt-main { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px; }
+    #done-toast .dt-sub { font-size: 13px; color: #aaa; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -161,6 +167,7 @@
 <div id="view-import" class="page hidden"></div>
 <button id="fab" onclick="onFab()">＋</button>
 <div id="modal-bg" class="hidden"><div id="modal-box"></div></div>
+<div id="done-toast"><div class="dt-icon">🥋</div><div class="dt-main"></div><div class="dt-sub"></div></div>
 
 <script>
 
@@ -266,6 +273,7 @@ const I18N = {
     search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
     nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
     stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
+    done_toast:'練習お疲れ様でした！', done_toast_sub:'記録を保存しました',
     stats_by_tech:'技ランキング', stats_by_position:'ポジション別', stats_hours:'時間', stats_no_data:'データがありません', stats_avg_condition:'平均コンディション',
   },
   en: {
@@ -358,6 +366,7 @@ const I18N = {
     search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
     nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
     stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
+    done_toast:'Great work today!', done_toast_sub:'Your session has been saved',
     stats_by_tech:'Technique ranking', stats_by_position:'By position', stats_hours:'hrs', stats_no_data:'No data', stats_avg_condition:'Avg condition',
   },
   pt: {
@@ -450,9 +459,104 @@ const I18N = {
     search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
     nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
     stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
+    done_toast:'Bom treino!', done_toast_sub:'Seu registro foi salvo',
     stats_by_tech:'Ranking de técnicas', stats_by_position:'Por posição', stats_hours:'h', stats_no_data:'Sem dados', stats_avg_condition:'Condição média',
+  },
+  ko: {
+    app_title:'BJJ Log', nav_home:'홈', nav_list:'기록', nav_library:'기술', nav_videos:'영상 메모', nav_flowchart:'플로우차트',
+    pending_title:'훈련 후 기록이 미완료입니다', goal_label:'목표', record_post:'훈련 후 기록하기',
+    stat_done:'완료한 훈련', stat_time:'총 훈련 시간', stat_pending:'기록 대기', stat_avg:'평균 컨디션',
+    recent_title:'최근 훈련', empty_dashboard:'우측 하단 + 버튼으로 기록을 추가하세요',
+    status_pending:'기록 대기', status_done:'완료',
+    cal_months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+    cal_dow:['월','화','수','목','금','토','일'], no_record_day:'이 날의 기록이 없습니다', show_all:'전체 보기',
+    all:'전체', no_record:'기록 없음',
+    back_list:'목록', edit:'편집', delete:'삭제',
+    pre_session:'훈련 전', post_session:'훈련 후',
+    goal_today:'🎯 오늘의 목표', body_condition:'몸 상태', injury_pain:'부상 / 통증',
+    content_label:'훈련 내용', techniques_label:'배운 / 연습한 기술', view_in_library:'→ 라이브러리에서 보기',
+    sparring_notes:'스파링 메모', subs_got:'성공', subs_given:'당함',
+    correction:'⚡ 개선할 점', reinforcement:'✅ 강화할 점', next_goal:'🎯 다음 목표',
+    body_injury_post:'⚠️ 몸 상태 / 부상 (훈련 후)', condition:'컨디션', practice_video:'📹 훈련 영상',
+    cancel:'취소', basic_info:'기본 정보', date:'날짜', type:'종류',
+    start_time:'시작 시간', end_time:'종료 시간', duration_min:'시간 (분)',
+    time_auto_hint:'시작·종료 시간을 입력하면 자동 계산됩니다 (직접 입력도 가능)',
+    partner_gym:'상대 / 체육관', pre_state:'훈련 전 상태',
+    goal_placeholder:'오늘 훈련에서 달성하고 싶은 것', condition_placeholder:'피로감, 수면 등',
+    injury_placeholder:'예: 오른쪽 무릎에 위화감', tags:'태그', tag_placeholder:'태그 입력', add:'추가',
+    save_pre:'훈련 전 저장', update_pre:'훈련 전 수정', input_post:'훈련 후 입력 →',
+    content_placeholder:'오늘 훈련에서 한 것',
+    tech_name:'기술명', tech_name_placeholder:'예: 암바', position:'포지션', memo:'메모',
+    memo_placeholder:'포인트나 깨달은 점', tech_video_url:'이 기술의 영상 URL', add_tech:'＋ 기술 추가',
+    sparring_placeholder:'공방, 깨달은 점 등', subs_got_label:'성공한 서브미션', subs_given_label:'당한 서브미션',
+    review:'되돌아보기', correction_label:'⚡ 개선할 점', correction_placeholder:'다음에 고치고 싶은 움직임·습관',
+    reinforcement_label:'✅ 강화할 점', reinforcement_placeholder:'잘된 것 / 계속하고 싶은 것',
+    next_goal_label:'🎯 다음 목표', next_goal_placeholder:'다음 훈련에서 의식할 것',
+    body_injury_post_label:'⚠️ 몸 상태 / 부상 (훈련 후)', injury_post_placeholder:'통증이나 피로감 등',
+    video_section:'훈련 영상', video_hint:'YouTube·Google 드라이브 등 세션 전체 영상',
+    complete_save:'완료 · 저장', back_to_pre:'← 훈련 전으로 돌아가기',
+    tech_types:'기술', tech_count_suffix:'종류', empty_library:'기록에 기술을 추가하면\n여기에 자동으로 정리됩니다',
+    times_practiced:'회 연습', last:'최근', practiced_count:'회 연습',
+    tech_videos:'📹 이 기술의 영상', practice_history:'연습 기록', view_record:'기록 보기 →',
+    ref_videos:'참고 영상 메모', empty_videos:'우측 하단 + 버튼으로 참고 영상을 추가하세요',
+    no_category:'카테고리 없음', filter:'필터',
+    add_ref_video:'참고 영상 추가', edit_video_memo:'영상 메모 편집',
+    title_label:'제목', title_placeholder:'예: 베림볼로 해설',
+    video_url:'영상 URL', category_label:'카테고리 (기술명 등)', category_placeholder:'예: 암바, 초크',
+    memo_ref_placeholder:'참고하고 싶은 포인트 등', update:'수정',
+    flowchart_count:'플로우차트', flowchart_hint:'포지션을 시작점으로 내 움직임·상대 움직임으로 분기시켜 전략을 시각화할 수 있습니다',
+    empty_flowchart:'우측 하단 + 버튼으로\n플로우차트를 만들어보세요',
+    moves_count:'개의 움직임', open:'열기 →', untitled:'(제목 없음)',
+    fc_edit:'✏️ 편집', fc_done:'✓ 편집 완료',
+    fc_title_placeholder:'예: 델라히바 셋업에서 스윕까지',
+    start_position:'🟢 시작 포지션', start_pos_placeholder:'예: 깃·소매 그립',
+    move_flow:'움직임의 흐름', move_flow_edit:'움직임의 흐름 (편집)',
+    branch_hint:'🟤 내 움직임 ／ 🔵 상대 움직임으로 분기', start:'시작',
+    legend_pos:'포지션', legend_me:'나', legend_opp:'상대',
+    empty_fc_detail:'"✏️ 편집"에서\n플로우차트를 만들어보세요',
+    pinch_hint:'두 손가락으로 확대·축소 · 한 손가락으로 드래그 이동',
+    move_placeholder:'움직임·기술 (예: 팔을 넣는다)', notes_optional:'메모 (선택)',
+    add_me:'＋나', add_opp:'＋상대', add_my_move:'＋ 내 움직임', add_opp_move:'＋ 상대 움직임',
+    me:'나', opp:'상대',
+    positions:['마운트','백','가드','하프가드','사이드 컨트롤','니 온 벨리','터틀','스탠딩'],
+    ratings:['😞 최악','😕 별로','😐 보통','🙂 좋음','😄 최고'],
+    rating_short:['최악','별로','보통','좋음','최고'],
+    session_types:['스파링','수업','테크닉','드릴','시합','자율 훈련','노기','웨이트','HIIT'],
+    confirm_delete_record:'이 기록을 삭제하시겠습니까?', confirm_delete_video:'이 영상 메모를 삭제하시겠습니까?',
+    confirm_delete_flowchart:'이 플로우차트를 삭제하시겠습니까?', confirm_delete_node:'이 움직임(하위 분기 포함)을 삭제하시겠습니까?',
+    alert_url_title:'URL 또는 제목을 입력해주세요',
+    lang_label:'言語 / Language', copy_url:'URL 복사', partner_placeholder:'예: 김코치',
+    types_title:'훈련 종류', types_hint:'훈련 종류를 자유롭게 추가·삭제할 수 있습니다. 삭제해도 기존 기록은 그대로 남습니다.',
+    type_add_placeholder:'새 종류 이름', type_exists:'이미 존재하는 종류입니다', type_in_use:'이 종류는 기록에서 사용 중입니다. 삭제하시겠습니까?',
+    type_default:'기본', type_custom:'추가한 종류', type_hidden:'숨긴 종류', type_restore:'되돌리기',
+    type_in_use_n:'이 종류는 {n}개의 기록에서 사용 중입니다. 목록에서 삭제하시겠습니까? (기존 기록은 그대로 남습니다)',
+    type_used_count:'{n}개',
+    marks_title:'캘린더 마크', marks_hint:'훈련 종류별로 캘린더에 표시할 마크를 선택할 수 있습니다.',
+    carry_goal_title:'다음 목표 이어받기', carry_goal_hint:'이전의 "다음 목표"를 새 기록의 목표란에 자동으로 입력합니다.',
+    carry_goal_from:'이전 목표를 이어받았습니다',
+    fields_title:'표시 항목', fields_hint:'기록 입력 화면에 표시할 항목을 선택할 수 있습니다. 날짜·종류·시간은 항상 표시됩니다.',
+    fields_reset:'전체 표시로 되돌리기',
+    settings_title:'설정', backup_title:'백업', backup_hint:'모든 데이터를 파일로 저장합니다. 기기 변경이나 향후 앱 이전에 사용할 수 있습니다.',
+    backup_export:'📤 데이터 내보내기', backup_import:'📥 데이터 가져오기',
+    backup_export_done:'데이터를 내보냈습니다', backup_import_confirm:'현재 데이터를 덮어씁니다. 계속하시겠습니까?',
+    backup_import_done:'데이터를 가져왔습니다', backup_import_error:'파일을 읽지 못했습니다',
+    backup_stats:'기록: {r}개 / 영상: {v}개 / 플로우차트: {f}개',
+    backup_warning:'⚠️ 이 데이터는 브라우저 안에만 저장됩니다. 정기적으로 백업하는 것을 권장합니다.',
+    import_title:'메모 가져오기', import_hint:'메모 앱이나 메신저에 적어둔 훈련 기록을 붙여넣으세요. 날짜가 있으면 자동으로 분할합니다.',
+    import_placeholder:'7/10 스파링 60분\n암바 연습함\n컨디션 좋았음\n\n7/12 수업\n델라히바 진입 배움',
+    import_analyze:'분석하기', import_confirm:'가져오기', import_found:'개의 기록을 찾았습니다',
+    import_no_date:'날짜를 찾지 못했습니다', import_set_date:'날짜 선택', import_preview:'미리보기',
+    import_empty:'텍스트를 붙여넣어 주세요', import_done:'개의 기록을 가져왔습니다', import_back:'뒤로',
+    import_split_hint:'빈 줄로 구분하면 여러 기록으로 가져올 수 있습니다', import_content_label:'내용',
+    search_title:'검색', search_placeholder:'기술명·메모·목표 등으로 검색', search_no_result:'해당하는 결과가 없습니다', search_hint:'키워드를 입력해주세요',
+    search_records:'훈련 기록', search_techniques:'기술', search_videos:'영상 메모', search_flowcharts:'플로우차트', search_results:'개의 결과',
+    nav_stats:'통계', stats_time:'훈련 시간', stats_ranking:'기술·포지션', stats_condition:'컨디션', stats_breakdown:'종류별',
+    stats_weekly:'주간', stats_monthly:'월간', stats_empty:'기록이 쌓이면\n여기에 통계가 표시됩니다',
+    done_toast:'훈련하느라 수고하셨습니다!', done_toast_sub:'기록이 저장되었습니다',
+    stats_by_tech:'기술 랭킹', stats_by_position:'포지션별', stats_hours:'시간', stats_no_data:'데이터가 없습니다', stats_avg_condition:'평균 컨디션',
   }
 };
+
 
 let currentLang = localStorage.getItem('bjj_lang') || 'ja';
 
@@ -518,6 +622,7 @@ function openLangModal(){
       <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
       <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
       <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
+      <button class="${currentLang==='ko'?'btn-primary':'btn-secondary'}" onclick="setLang('ko')">🇰🇷 한국어</button>
     </div>
     <div style="margin-top:16px"><button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button></div>`;
   document.getElementById('modal-bg').classList.remove('hidden');
@@ -1259,6 +1364,15 @@ function savePre(){
   }
   save(); showView('list');
 }
+function showDoneToast(){
+  const el=document.getElementById('done-toast');
+  if(!el) return;
+  el.querySelector('.dt-main').textContent=t('done_toast');
+  el.querySelector('.dt-sub').textContent=t('done_toast_sub');
+  el.classList.add('show');
+  setTimeout(()=>{ el.classList.remove('show'); }, 2000);
+}
+
 function savePost(){
   // 全フィールドをIDで確実に同期
   const syncFields=[
@@ -1288,6 +1402,7 @@ function savePost(){
     sessions=[{...form,status:'done'},...sessions];
   }
   editingId=null; form=newForm(); save(); showView('list');
+  showDoneToast();
 }
 
 
@@ -2180,6 +2295,7 @@ function openSettings(){
       <button class="${currentLang==='ja'?'btn-primary':'btn-secondary'}" onclick="setLang('ja')">🇯🇵 日本語</button>
       <button class="${currentLang==='en'?'btn-primary':'btn-secondary'}" onclick="setLang('en')">🇬🇧 English</button>
       <button class="${currentLang==='pt'?'btn-primary':'btn-secondary'}" onclick="setLang('pt')">🇧🇷 Português</button>
+      <button class="${currentLang==='ko'?'btn-primary':'btn-secondary'}" onclick="setLang('ko')">🇰🇷 한국어</button>
     </div>`;
 
   const marksContent = ()=>`
