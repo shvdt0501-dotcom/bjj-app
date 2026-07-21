@@ -2836,7 +2836,7 @@ function drawSessionCard(x, W, H, belt){
       x.fillStyle = '#a8a29a';
       x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
       drawTracked(x, t('share_mat_time'), padL, y, isStory?7:6);
-      y += isStory ? 46 : 36;
+      y += isStory ? 66 : 52;
       x.fillStyle = '#1a1a1a';
       x.font = `700 ${isStory?52:40}px -apple-system, "Helvetica Neue", sans-serif`;
       const hh = Math.floor(s.duration/60), mm = s.duration%60;
@@ -2865,7 +2865,7 @@ function drawSessionCard(x, W, H, belt){
     x.fillStyle = '#a8a29a';
     x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
     drawTracked(x, 'WITH', padL, y, isStory?6:5);
-    y += isStory ? 46 : 36;
+    y += isStory ? 54 : 42;
     x.fillStyle = '#1a1a1a';
     x.font = `600 ${isStory?40:32}px -apple-system, "Helvetica Neue", sans-serif`;
     let pn = s.partner;
@@ -2882,7 +2882,7 @@ function drawSessionCard(x, W, H, belt){
     x.fillStyle = '#a8a29a';
     x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
     drawTracked(x, 'GOAL', padL, y, isStory?6:5);
-    y += isStory ? 46 : 36;
+    y += isStory ? 54 : 42;
     x.fillStyle = '#1a1a1a';
     y = drawWrapped(x, s.goal, padL, y, contentW, isStory?36:29, isStory?50:40, isStory?2:2);
     y += isStory ? 22 : 16;
@@ -2925,7 +2925,7 @@ function drawSessionCard(x, W, H, belt){
       x.fillStyle = '#a8a29a';
       x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
       drawTracked(x, 'NOTES', padL, y, isStory?6:5);
-      y += isStory ? 46 : 36;
+      y += isStory ? 52 : 41;
       x.fillStyle = '#4a453e';
       y = drawWrapped(x, note, padL, y, contentW, isStory?32:26, isStory?46:37, isStory?3:2);
       y += isStory ? 20 : 14;
@@ -3007,7 +3007,7 @@ function drawWeekCard(x, W, H, belt){
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, 'WEEKLY', padL, y, isStory?8:7);
-  y += isStory ? 64 : 50;
+  y += isStory ? 92 : 70;
 
   // 日付範囲（英語月名）
   x.fillStyle = '#1a1a1a';
@@ -3096,7 +3096,7 @@ function drawWeekCard(x, W, H, belt){
   if(mins>0){
     x.fillStyle = '#a8a29a';
     x.font = `600 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
-    x.fillText(`${mins} MIN`, padL + hw + (isStory?20:16), y + bigSize*0.76 - (isStory?48:38));
+    x.fillText(`${mins} MIN`, padL + hw + (isStory?20:16), y + bigSize*0.76 - (isStory?54:44));
   }
 
   // 右側に日数
@@ -3133,7 +3133,7 @@ function drawStatsCard(x, W, H, belt){
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, 'MONTHLY', padL, y, isStory?8:7);
-  y += isStory ? 64 : 50;
+  y += isStory ? 108 : 82;
 
   // 月名（英語・イタリック）と年
   x.fillStyle = '#1a1a1a';
@@ -3168,7 +3168,7 @@ function drawStatsCard(x, W, H, belt){
   if(mins>0){
     x.fillStyle = '#a8a29a';
     x.font = `600 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
-    x.fillText(`${mins} MIN`, padL + hw + (isStory?22:18), y + bigSize*0.76 - (isStory?54:42));
+    x.fillText(`${mins} MIN`, padL + hw + (isStory?22:18), y + bigSize*0.76 - (isStory?60:48));
   }
   y += isStory ? 250 : 180;
 
@@ -3178,7 +3178,7 @@ function drawStatsCard(x, W, H, belt){
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, t('share_sessions'), padL, y, isStory?8:7);
   drawTracked(x, t('share_days'), padL + contentW*0.5, y, isStory?8:7);
-  y += isStory ? 24 : 18;
+  y += isStory ? 34 : 26;
   x.fillStyle = '#1a1a1a';
   x.font = `800 ${isStory?110:82}px -apple-system, "Helvetica Neue", sans-serif`;
   x.fillText(String(monthSessions.length), padL, y + (isStory?86:64));
