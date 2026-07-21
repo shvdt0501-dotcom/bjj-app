@@ -272,6 +272,7 @@ const I18N = {
     search_title:'検索', search_placeholder:'技名・メモ・目標などで検索', search_no_result:'該当する結果がありません', search_hint:'キーワードを入力してください',
     search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
     nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
+    stats_period_week:'週', stats_period_month:'月', stats_all_time:'全期間', stats_no_data_period:'この期間の記録がありません',
     stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
     share_items:'表示する項目', share_f_date:'日付', share_f_type:'種別', share_f_time:'時刻', share_f_duration:'練習時間',
     share_f_tech:'技', share_f_partner:'相手・道場', share_f_goal:'目標', share_f_notes:'メモ', share_f_rating:'コンディション',
@@ -373,6 +374,7 @@ const I18N = {
     search_title:'Search', search_placeholder:'Search by technique, notes, goals...', search_no_result:'No matching results', search_hint:'Enter a keyword',
     search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
     nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
+    stats_period_week:'Week', stats_period_month:'Month', stats_all_time:'All time', stats_no_data_period:'No records in this period',
     stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
     share_items:'Items to show', share_f_date:'Date', share_f_type:'Type', share_f_time:'Time', share_f_duration:'Duration',
     share_f_tech:'Techniques', share_f_partner:'Partner / gym', share_f_goal:'Goal', share_f_notes:'Notes', share_f_rating:'Condition',
@@ -474,6 +476,7 @@ const I18N = {
     search_title:'Buscar', search_placeholder:'Buscar por técnica, notas, metas...', search_no_result:'Nenhum resultado encontrado', search_hint:'Digite uma palavra-chave',
     search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
     nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
+    stats_period_week:'Semana', stats_period_month:'Mês', stats_all_time:'Tudo', stats_no_data_period:'Sem registros neste período',
     stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
     share_items:'Itens a exibir', share_f_date:'Data', share_f_type:'Tipo', share_f_time:'Horário', share_f_duration:'Duração',
     share_f_tech:'Técnicas', share_f_partner:'Parceiro / academia', share_f_goal:'Meta', share_f_notes:'Notas', share_f_rating:'Condição',
@@ -575,6 +578,7 @@ const I18N = {
     search_title:'검색', search_placeholder:'기술명·메모·목표 등으로 검색', search_no_result:'해당하는 결과가 없습니다', search_hint:'키워드를 입력해주세요',
     search_records:'훈련 기록', search_techniques:'기술', search_videos:'영상 메모', search_flowcharts:'플로우차트', search_results:'개의 결과',
     nav_stats:'통계', stats_time:'훈련 시간', stats_ranking:'기술·포지션', stats_condition:'컨디션', stats_breakdown:'종류별',
+    stats_period_week:'주', stats_period_month:'월', stats_all_time:'전체', stats_no_data_period:'이 기간의 기록이 없습니다',
     stats_weekly:'주간', stats_monthly:'월간', stats_empty:'기록이 쌓이면\n여기에 통계가 표시됩니다',
     share_items:'표시할 항목', share_f_date:'날짜', share_f_type:'종류', share_f_time:'시간', share_f_duration:'훈련 시간',
     share_f_tech:'기술', share_f_partner:'상대 · 체육관', share_f_goal:'목표', share_f_notes:'메모', share_f_rating:'컨디션',
@@ -1762,6 +1766,62 @@ function deleteFlowchart(id){
 // ── STATS（統計ダッシュボード） ──
 let statsTab = 'time';      // time | ranking | condition | breakdown
 let statsTimeRange = 'weekly'; // weekly | monthly
+let statsPeriod = 'month';  // week | month | all
+let statsOffset = 0;        // 0=今期, 1=前期, ...
+
+function setStatsPeriod(p){ statsPeriod=p; statsOffset=0; renderStats(); }
+function changeStatsOffset(delta){
+  const next = statsOffset + delta;
+  if(next < 0) return;
+  if(next > 120) return;
+  statsOffset = next;
+  renderStats();
+}
+
+// 選択中の期間の範囲を返す（allならnull）
+function getStatsRange(){
+  if(statsPeriod==='all') return null;
+  const now = new Date();
+  if(statsPeriod==='week'){
+    let dow = now.getDay(); dow = (dow===0)?6:dow-1;
+    const start = new Date(now);
+    start.setDate(now.getDate() - dow - statsOffset*7);
+    start.setHours(0,0,0,0);
+    const end = new Date(start);
+    end.setDate(start.getDate()+6);
+    end.setHours(23,59,59,999);
+    return { start, end };
+  }
+  // month
+  const start = new Date(now.getFullYear(), now.getMonth() - statsOffset, 1, 0,0,0,0);
+  const end = new Date(now.getFullYear(), now.getMonth() - statsOffset + 1, 0, 23,59,59,999);
+  return { start, end };
+}
+
+// 期間でセッションを絞り込む
+function filterByStatsPeriod(list){
+  const r = getStatsRange();
+  if(!r) return list;
+  return list.filter(s=>{
+    const d = new Date(s.date);
+    return d >= r.start && d <= r.end;
+  });
+}
+
+// 期間ラベル
+function statsPeriodLabel(){
+  const r = getStatsRange();
+  if(!r) return t('stats_all_time');
+  if(statsPeriod==='week'){
+    const sameMonth = r.start.getMonth()===r.end.getMonth();
+    return sameMonth
+      ? `${r.start.getMonth()+1}/${r.start.getDate()} — ${r.end.getDate()}`
+      : `${r.start.getMonth()+1}/${r.start.getDate()} — ${r.end.getMonth()+1}/${r.end.getDate()}`;
+  }
+  return currentLang==='ja'
+    ? `${r.start.getFullYear()}年 ${r.start.getMonth()+1}月`
+    : `${t('cal_months')[r.start.getMonth()]} ${r.start.getFullYear()}`;
+}
 let statsRankMode = 'tech';  // tech | position
 
 function renderStats(){
@@ -1784,45 +1844,109 @@ function renderStats(){
     <button class="btn-secondary" style="flex:1;color:#b07d3a;border-color:#b07d3a33;font-size:12px" onclick="openShareModal('stats')">📤 ${t('share_stats')}</button>
   </div>`;
 
-  if(statsTab==='time')      html += renderStatsTime(done);
-  if(statsTab==='ranking')   html += renderStatsRanking(done);
-  if(statsTab==='condition') html += renderStatsCondition(done);
-  if(statsTab==='breakdown') html += renderStatsBreakdown(done);
+  // 「練習時間」タブ以外は期間を切り替えられる
+  const usePeriod = statsTab !== 'time';
+  let scoped = done;
+
+  if(usePeriod){
+    html += renderPeriodNav();
+    scoped = filterByStatsPeriod(done);
+  }
+
+  if(statsTab==='time'){
+    html += renderStatsTime(done);
+  } else if(!scoped.length){
+    html += `<div class="card" style="text-align:center;padding:28px;color:#aaa;font-size:14px">${t('stats_no_data_period')}</div>`;
+  } else {
+    if(statsTab==='ranking')   html += renderStatsRanking(scoped);
+    if(statsTab==='condition') html += renderStatsCondition(scoped);
+    if(statsTab==='breakdown') html += renderStatsBreakdown(scoped);
+  }
 
   document.getElementById('view-stats').innerHTML=html;
 }
 
+// 期間切り替えのナビゲーション
+function renderPeriodNav(){
+  const isAll = statsPeriod==='all';
+  const cnt = filterByStatsPeriod(sessions.filter(s=>s.status==='done')).length;
+  return `<div style="margin-bottom:14px">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button class="stats-tab ${statsPeriod==='week'?'active':''}" style="flex:1;text-align:center" onclick="setStatsPeriod('week')">${t('stats_period_week')}</button>
+      <button class="stats-tab ${statsPeriod==='month'?'active':''}" style="flex:1;text-align:center" onclick="setStatsPeriod('month')">${t('stats_period_month')}</button>
+      <button class="stats-tab ${statsPeriod==='all'?'active':''}" style="flex:1;text-align:center" onclick="setStatsPeriod('all')">${t('stats_all_time')}</button>
+    </div>
+    ${isAll ? '' : `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:#fff;border:1px solid #e8e8e8;border-radius:8px">
+      <button onclick="changeStatsOffset(1)" style="background:none;border:none;font-size:19px;cursor:pointer;color:#b07d3a;padding:2px 10px">‹</button>
+      <div style="text-align:center;flex:1">
+        <div style="font-size:14px;font-weight:600;color:#1a1a1a">${statsPeriodLabel()}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:1px">${cnt}</div>
+      </div>
+      <button onclick="changeStatsOffset(-1)" ${statsOffset===0?'disabled':''} style="background:none;border:none;font-size:19px;cursor:pointer;color:${statsOffset===0?'#ddd':'#b07d3a'};padding:2px 10px">›</button>
+    </div>`}
+  </div>`;
+}
+
 function setStatsTab(tab){ statsTab=tab; renderStats(); }
-function setStatsTimeRange(r){ statsTimeRange=r; renderStats(); }
+function setStatsTimeRange(r){ statsTimeRange=r; statsChartOffset=0; renderStats(); }
 function setStatsRankMode(m){ statsRankMode=m; renderStats(); }
 
-// ① 練習時間グラフ（棒グラフ）
+// ① 練習時間グラフ（棒グラフ）— 過去へスクロール可能
+let statsChartOffset = 0; // 0=最新, 1=1区間前...
+function changeChartOffset(delta){
+  const next = statsChartOffset + delta;
+  if(next < 0) return;
+  if(next > 60) return;
+  statsChartOffset = next;
+  renderStats();
+}
+
 function renderStatsTime(done){
   const now=new Date();
-  let buckets=[], labels=[];
+  let buckets=[], labels=[], rangeLabel='';
+
   if(statsTimeRange==='weekly'){
-    // 直近8週
-    for(let i=7;i>=0;i--){
-      const d=new Date(now); d.setDate(now.getDate()-i*7);
+    const span = 8;
+    const shift = statsChartOffset * span;
+    for(let i=span-1;i>=0;i--){
+      const d=new Date(now); d.setDate(now.getDate()-(i+shift)*7);
       const {start,end}=weekRange(d);
       const mins=done.filter(s=>{ const sd=new Date(s.date); return sd>=start && sd<=end; }).reduce((a,b)=>a+(b.duration||0),0);
       buckets.push(Math.round(mins/60*10)/10);
       labels.push(`${start.getMonth()+1}/${start.getDate()}`);
+      if(i===span-1) rangeLabel = `${start.getMonth()+1}/${start.getDate()}`;
+      if(i===0) rangeLabel += ` — ${end.getMonth()+1}/${end.getDate()}`;
     }
   } else {
-    // 直近6ヶ月
-    for(let i=5;i>=0;i--){
-      const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const span = 6;
+    const shift = statsChartOffset * span;
+    for(let i=span-1;i>=0;i--){
+      const d=new Date(now.getFullYear(), now.getMonth()-i-shift, 1);
       const y=d.getFullYear(), m=d.getMonth();
       const mins=done.filter(s=>{ const sd=new Date(s.date); return sd.getFullYear()===y && sd.getMonth()===m; }).reduce((a,b)=>a+(b.duration||0),0);
       buckets.push(Math.round(mins/60*10)/10);
       labels.push(t('cal_months')[m]);
+      if(i===span-1) rangeLabel = `${t('cal_months')[m]} ${y}`;
+      if(i===0) rangeLabel += ` — ${t('cal_months')[m]} ${y}`;
     }
   }
+
+  const total = buckets.reduce((a,b)=>a+b,0);
+
   let html=`<div class="sub-toggle">
     <button class="${statsTimeRange==='weekly'?'active':''}" onclick="setStatsTimeRange('weekly')">${t('stats_weekly')}</button>
     <button class="${statsTimeRange==='monthly'?'active':''}" onclick="setStatsTimeRange('monthly')">${t('stats_monthly')}</button>
   </div>`;
+
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:#fff;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:12px">
+    <button onclick="changeChartOffset(1)" style="background:none;border:none;font-size:19px;cursor:pointer;color:#b07d3a;padding:2px 10px">‹</button>
+    <div style="text-align:center;flex:1">
+      <div style="font-size:13px;font-weight:600;color:#1a1a1a">${rangeLabel}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:1px">${Math.round(total*10)/10} ${t('stats_hours')}</div>
+    </div>
+    <button onclick="changeChartOffset(-1)" ${statsChartOffset===0?'disabled':''} style="background:none;border:none;font-size:19px;cursor:pointer;color:${statsChartOffset===0?'#ddd':'#b07d3a'};padding:2px 10px">›</button>
+  </div>`;
+
   html += `<div class="card">${barChartSvg(buckets, labels, t('stats_hours'))}</div>`;
   return html;
 }
