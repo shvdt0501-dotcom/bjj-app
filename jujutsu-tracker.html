@@ -2588,6 +2588,9 @@ function getWeekRange(offset){
   return { monday, sunday };
 }
 
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_EN_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
 function typeEn(type){
   if(!type) return '';
   return TYPE_EN[type] || type;
@@ -2648,7 +2651,10 @@ function changeShareWeek(delta){
 }
 function shareWeekLabel(){
   const { monday, sunday } = getWeekRange(shareWeekOffset);
-  const range = `${monday.getMonth()+1}/${monday.getDate()} — ${sunday.getMonth()+1}/${sunday.getDate()}`;
+  const same = monday.getMonth()===sunday.getMonth();
+  const range = same
+    ? `${MONTHS_EN_SHORT[monday.getMonth()]} ${monday.getDate()}–${sunday.getDate()}`
+    : `${MONTHS_EN_SHORT[monday.getMonth()]} ${monday.getDate()} – ${MONTHS_EN_SHORT[sunday.getMonth()]} ${sunday.getDate()}`;
   const { monday:m2, sunday:s2 } = getWeekRange(shareWeekOffset);
   const cnt = sessions.filter(s=>{
     const d = new Date(s.date);
@@ -3000,14 +3006,22 @@ function drawWeekCard(x, W, H, belt){
   // ヘッダー
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
-  const weekLabel = shareWeekOffset===0 ? 'THIS WEEK' : (shareWeekOffset===1 ? 'LAST WEEK' : `${shareWeekOffset} WEEKS AGO`);
-  drawTracked(x, weekLabel, padL, y, isStory?8:7);
-  y += isStory ? 58 : 46;
+  drawTracked(x, 'WEEKLY', padL, y, isStory?8:7);
+  y += isStory ? 64 : 50;
 
+  // 日付範囲（英語月名）
   x.fillStyle = '#1a1a1a';
-  x.font = `800 ${isStory?66:52}px -apple-system, "Helvetica Neue", sans-serif`;
-  const mLabel = `${monday.getMonth()+1}/${monday.getDate()} — ${sunday.getMonth()+1}/${sunday.getDate()}`;
+  const sameMonth = monday.getMonth()===sunday.getMonth();
+  const mLabel = sameMonth
+    ? `${MONTHS_EN_SHORT[monday.getMonth()]} ${monday.getDate()}–${sunday.getDate()}`
+    : `${MONTHS_EN_SHORT[monday.getMonth()]} ${monday.getDate()} – ${MONTHS_EN_SHORT[sunday.getMonth()]} ${sunday.getDate()}`;
+  const wSize = fitText(x, mLabel, contentW*0.78, isStory?68:54, `800 {s}px -apple-system, "Helvetica Neue", sans-serif`, 34);
+  x.font = `800 ${wSize}px -apple-system, "Helvetica Neue", sans-serif`;
   x.fillText(mLabel, padL, y);
+  const wLabelW = x.measureText(mLabel).width;
+  x.fillStyle = '#c4bdb2';
+  x.font = `600 ${isStory?34:27}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(String(monday.getFullYear()), padL + wLabelW + (isStory?18:14), y);
   y += isStory ? 34 : 26;
 
   x.strokeStyle = '#1a1a1a';
@@ -3118,12 +3132,19 @@ function drawStatsCard(x, W, H, belt){
 
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
-  drawTracked(x, t('share_this_month'), padL, y, isStory?8:7);
-  y += isStory ? 58 : 46;
+  drawTracked(x, 'MONTHLY', padL, y, isStory?8:7);
+  y += isStory ? 64 : 50;
 
+  // 月名（英語・イタリック）と年
   x.fillStyle = '#1a1a1a';
-  x.font = `800 ${isStory?86:66}px -apple-system, "Helvetica Neue", sans-serif`;
-  x.fillText(`${t('cal_months')[mo]} ${yr}`, padL, y);
+  const monthName = MONTHS_EN[mo];
+  const monthSize = fitText(x, monthName, contentW*0.72, isStory?92:70, `italic 800 {s}px "Helvetica Neue", -apple-system, sans-serif`, 44);
+  x.font = `italic 800 ${monthSize}px "Helvetica Neue", -apple-system, sans-serif`;
+  x.fillText(monthName, padL, y);
+  const mnW = x.measureText(monthName).width;
+  x.fillStyle = '#c4bdb2';
+  x.font = `600 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(String(yr), padL + mnW + (isStory?18:14), y);
   y += isStory ? 36 : 28;
 
   x.strokeStyle = '#1a1a1a';
