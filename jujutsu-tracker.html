@@ -273,6 +273,11 @@ const I18N = {
     search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
     nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
     stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
+    share:'シェア', share_title:'画像でシェア', share_story:'ストーリー用', share_post:'投稿用',
+    share_download:'画像を保存', share_share:'シェアする', share_generating:'作成中...',
+    share_session:'この練習をシェア', share_stats:'今月の記録をシェア',
+    share_mat_time:'MAT TIME', share_total:'合計', share_sessions:'SESSIONS', share_this_month:'THIS MONTH',
+    share_techniques:'TECHNIQUES', share_saved:'画像を保存しました',
     done_toast:'練習お疲れ様でした！', done_toast_sub:'記録を保存しました',
     stats_by_tech:'技ランキング', stats_by_position:'ポジション別', stats_hours:'時間', stats_no_data:'データがありません', stats_avg_condition:'平均コンディション',
   },
@@ -366,6 +371,11 @@ const I18N = {
     search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
     nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
     stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
+    share:'Share', share_title:'Share as image', share_story:'Story', share_post:'Post',
+    share_download:'Save image', share_share:'Share', share_generating:'Generating...',
+    share_session:'Share this session', share_stats:'Share this month',
+    share_mat_time:'MAT TIME', share_total:'Total', share_sessions:'SESSIONS', share_this_month:'THIS MONTH',
+    share_techniques:'TECHNIQUES', share_saved:'Image saved',
     done_toast:'Great work today!', done_toast_sub:'Your session has been saved',
     stats_by_tech:'Technique ranking', stats_by_position:'By position', stats_hours:'hrs', stats_no_data:'No data', stats_avg_condition:'Avg condition',
   },
@@ -459,6 +469,11 @@ const I18N = {
     search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
     nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
     stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
+    share:'Compartilhar', share_title:'Compartilhar imagem', share_story:'Story', share_post:'Post',
+    share_download:'Salvar imagem', share_share:'Compartilhar', share_generating:'Gerando...',
+    share_session:'Compartilhar este treino', share_stats:'Compartilhar o mês',
+    share_mat_time:'MAT TIME', share_total:'Total', share_sessions:'SESSÕES', share_this_month:'ESTE MÊS',
+    share_techniques:'TÉCNICAS', share_saved:'Imagem salva',
     done_toast:'Bom treino!', done_toast_sub:'Seu registro foi salvo',
     stats_by_tech:'Ranking de técnicas', stats_by_position:'Por posição', stats_hours:'h', stats_no_data:'Sem dados', stats_avg_condition:'Condição média',
   },
@@ -552,6 +567,11 @@ const I18N = {
     search_records:'훈련 기록', search_techniques:'기술', search_videos:'영상 메모', search_flowcharts:'플로우차트', search_results:'개의 결과',
     nav_stats:'통계', stats_time:'훈련 시간', stats_ranking:'기술·포지션', stats_condition:'컨디션', stats_breakdown:'종류별',
     stats_weekly:'주간', stats_monthly:'월간', stats_empty:'기록이 쌓이면\n여기에 통계가 표시됩니다',
+    share:'공유', share_title:'이미지로 공유', share_story:'스토리용', share_post:'게시물용',
+    share_download:'이미지 저장', share_share:'공유하기', share_generating:'생성 중...',
+    share_session:'이 훈련 공유하기', share_stats:'이번 달 기록 공유',
+    share_mat_time:'MAT TIME', share_total:'합계', share_sessions:'SESSIONS', share_this_month:'THIS MONTH',
+    share_techniques:'TECHNIQUES', share_saved:'이미지를 저장했습니다',
     done_toast:'훈련하느라 수고하셨습니다!', done_toast_sub:'기록이 저장되었습니다',
     stats_by_tech:'기술 랭킹', stats_by_position:'포지션별', stats_hours:'시간', stats_no_data:'데이터가 없습니다', stats_avg_condition:'평균 컨디션',
   }
@@ -951,6 +971,7 @@ function renderDetail(){
   let html=`<div class="flex-row" style="margin-bottom:16px">
     <button class="btn-secondary" onclick="showView('list')">← ${t('back_list')}</button>
     ${s.status==='pre'?`<button class="btn-primary" onclick="startEdit(${s.id},'post')">${t('record_post')}</button>`:''}
+    ${s.status==='done'?`<button class="btn-secondary" style="color:#b07d3a;border-color:#b07d3a33" onclick="openShareModal('session',${s.id})">📤 ${t('share')}</button>`:''}
     <button class="btn-secondary" onclick="startEdit(${s.id},'${s.status==='pre'?'pre':'post'}')">${t('edit')}</button>
     <button class="btn-danger" onclick="deleteSession(${s.id})">${t('delete')}</button>
   </div>`;
@@ -1746,6 +1767,8 @@ function renderStats(){
     return;
   }
 
+  html += `<div style="margin-bottom:14px"><button class="btn-secondary" style="width:100%;color:#b07d3a;border-color:#b07d3a33" onclick="openShareModal('stats')">📤 ${t('share_stats')}</button></div>`;
+
   if(statsTab==='time')      html += renderStatsTime(done);
   if(statsTab==='ranking')   html += renderStatsRanking(done);
   if(statsTab==='condition') html += renderStatsCondition(done);
@@ -2505,6 +2528,316 @@ function importData(input){
   };
   reader.onerror = ()=>{ alert(t('backup_import_error')); input.value=''; };
   reader.readAsText(file);
+}
+
+
+
+// ── SHARE（画像シェア） ──
+let shareFormat = 'story'; // story(9:16) | post(1:1)
+let shareMode = 'session';  // session | stats
+let shareSessionId = null;
+
+function openShareModal(mode, sessionId){
+  shareMode = mode;
+  shareSessionId = sessionId || null;
+  shareFormat = 'story';
+  renderShareModal();
+}
+
+function setShareFormat(f){ shareFormat=f; renderShareModal(); }
+
+function renderShareModal(){
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title" style="margin-bottom:14px">${t('share_title')}</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="${shareFormat==='story'?'btn-primary':'btn-secondary'}" style="flex:1" onclick="setShareFormat('story')">${t('share_story')}<br><span style="font-size:10px;opacity:0.7">9:16</span></button>
+      <button class="${shareFormat==='post'?'btn-primary':'btn-secondary'}" style="flex:1" onclick="setShareFormat('post')">${t('share_post')}<br><span style="font-size:10px;opacity:0.7">1:1</span></button>
+    </div>
+    <div id="share-preview" style="display:flex;justify-content:center;margin-bottom:16px;min-height:180px;align-items:center">
+      <div style="color:#aaa;font-size:13px">${t('share_generating')}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-primary" onclick="downloadShareImage()">${t('share_download')}</button>
+      <button class="btn-secondary" onclick="closeModal()">${t('cancel')}</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.remove('hidden');
+  setTimeout(buildSharePreview, 60);
+}
+
+function buildSharePreview(){
+  const canvas = renderShareCanvas();
+  const wrap = document.getElementById('share-preview');
+  if(!wrap || !canvas) return;
+  const img = new Image();
+  img.src = canvas.toDataURL('image/png');
+  img.style.cssText = `max-width:100%;max-height:${shareFormat==='story'?'340px':'260px'};border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,0.14)`;
+  wrap.innerHTML='';
+  wrap.appendChild(img);
+}
+
+function downloadShareImage(){
+  const canvas = renderShareCanvas();
+  if(!canvas) return;
+  canvas.toBlob(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bjj-${shareMode}-${new Date().toISOString().split('T')[0]}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert(t('share_saved'));
+  }, 'image/png');
+}
+
+// ── 画像描画 ──
+function renderShareCanvas(){
+  const W = shareFormat==='story' ? 1080 : 1080;
+  const H = shareFormat==='story' ? 1920 : 1080;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+
+  // 背景：生成りの紙
+  x.fillStyle = '#faf7f2';
+  x.fillRect(0,0,W,H);
+
+  // 微細なマットのテクスチャ（薄い格子）
+  x.strokeStyle = 'rgba(26,26,26,0.028)';
+  x.lineWidth = 1;
+  const grid = 54;
+  for(let gx=0; gx<W; gx+=grid){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,H); x.stroke(); }
+  for(let gy=0; gy<H; gy+=grid){ x.beginPath(); x.moveTo(0,gy); x.lineTo(W,gy); x.stroke(); }
+
+  // 署名要素：左端の帯ストライプ
+  const beltW = shareFormat==='story' ? 26 : 20;
+  x.fillStyle = '#1a1a1a';
+  x.fillRect(0,0,beltW,H);
+  x.fillStyle = '#b07d3a';
+  const stripeTop = shareFormat==='story' ? H*0.62 : H*0.60;
+  x.fillRect(0, stripeTop, beltW, shareFormat==='story' ? 220 : 150);
+
+  if(shareMode==='session') drawSessionCard(x, W, H);
+  else drawStatsCard(x, W, H);
+
+  return c;
+}
+
+function fitText(x, text, maxW, startSize, font, minSize){
+  let size = startSize;
+  x.font = font.replace('{s}', size);
+  while(x.measureText(text).width > maxW && size > minSize){
+    size -= 2;
+    x.font = font.replace('{s}', size);
+  }
+  return size;
+}
+
+function drawSessionCard(x, W, H){
+  const s = sessions.find(v=>v.id===shareSessionId);
+  if(!s) return;
+  const isStory = shareFormat==='story';
+  const padL = isStory ? 96 : 82;
+  const padR = W - (isStory ? 84 : 70);
+  const contentW = padR - padL;
+  let y = isStory ? 200 : 130;
+
+  // 日付（小さく、トラッキング広め）
+  x.fillStyle = '#a8a29a';
+  x.font = `500 ${isStory?30:26}px -apple-system, "Helvetica Neue", sans-serif`;
+  const d = new Date(s.date);
+  const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  drawTracked(x, dateStr, padL, y, isStory?7:6);
+  y += isStory ? 70 : 56;
+
+  // 種別（大きく）
+  x.fillStyle = '#1a1a1a';
+  const typeSize = fitText(x, s.type||'', contentW, isStory?96:76, `800 {s}px -apple-system, "Helvetica Neue", sans-serif`, 44);
+  x.font = `800 ${typeSize}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(s.type||'', padL, y);
+  y += isStory ? 40 : 30;
+
+  // 区切り線
+  x.strokeStyle = '#1a1a1a';
+  x.lineWidth = 3;
+  x.beginPath(); x.moveTo(padL, y); x.lineTo(padL + (isStory?120:96), y); x.stroke();
+  y += isStory ? 90 : 70;
+
+  // 時間（主役の数字）
+  const hrs = Math.floor(s.duration/60), mins = s.duration%60;
+  const timeStr = hrs>0 ? `${hrs}:${String(mins).padStart(2,'0')}` : `${mins}`;
+  const timeUnit = hrs>0 ? 'HRS' : 'MIN';
+  x.fillStyle = '#b07d3a';
+  x.font = `800 ${isStory?200:150}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(timeStr, padL, y + (isStory?150:112));
+  const tw = x.measureText(timeStr).width;
+  x.fillStyle = '#1a1a1a';
+  x.font = `700 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(timeUnit, padL + tw + (isStory?20:16), y + (isStory?150:112));
+  y += isStory ? 190 : 145;
+
+  // 時刻レンジ
+  if(s.startTime && s.endTime){
+    x.fillStyle = '#a8a29a';
+    x.font = `500 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
+    drawTracked(x, `${s.startTime} — ${s.endTime}`, padL, y, isStory?4:3);
+    y += isStory ? 66 : 52;
+  }
+
+  y += isStory ? 30 : 22;
+
+  // 技リスト
+  const techs = (s.techniques||[]).map(tk=>tk.name).filter(Boolean);
+  if(techs.length){
+    x.fillStyle = '#a8a29a';
+    x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
+    drawTracked(x, t('share_techniques'), padL, y, isStory?6:5);
+    y += isStory ? 52 : 42;
+
+    x.fillStyle = '#1a1a1a';
+    const maxShow = isStory ? 6 : 4;
+    techs.slice(0, maxShow).forEach(name=>{
+      x.font = `600 ${isStory?40:32}px -apple-system, "Helvetica Neue", sans-serif`;
+      // 行頭のダッシュ
+      x.fillStyle = '#b07d3a';
+      x.fillRect(padL, y - (isStory?14:11), isStory?22:18, 3);
+      x.fillStyle = '#1a1a1a';
+      let nm = name;
+      if(x.measureText(nm).width > contentW - (isStory?44:36)){
+        while(x.measureText(nm+'…').width > contentW - (isStory?44:36) && nm.length>1) nm = nm.slice(0,-1);
+        nm += '…';
+      }
+      x.fillText(nm, padL + (isStory?44:36), y);
+      y += isStory ? 58 : 46;
+    });
+    if(techs.length > maxShow){
+      x.fillStyle = '#a8a29a';
+      x.font = `500 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
+      x.fillText(`+${techs.length-maxShow}`, padL + (isStory?44:36), y);
+    }
+  }
+
+  drawFooter(x, W, H);
+}
+
+function drawStatsCard(x, W, H){
+  const isStory = shareFormat==='story';
+  const padL = isStory ? 96 : 82;
+  const padR = W - (isStory ? 84 : 70);
+  const contentW = padR - padL;
+  let y = isStory ? 200 : 130;
+
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
+  const monthSessions = sessions.filter(s=>{
+    const d = new Date(s.date);
+    return d.getFullYear()===yr && d.getMonth()===mo && s.status==='done';
+  });
+  const totalMin = monthSessions.reduce((a,b)=>a+(b.duration||0),0);
+  const hrs = Math.floor(totalMin/60);
+  const mins = totalMin%60;
+
+  // 見出し
+  x.fillStyle = '#a8a29a';
+  x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
+  drawTracked(x, t('share_this_month'), padL, y, isStory?8:7);
+  y += isStory ? 58 : 46;
+
+  // 月名
+  x.fillStyle = '#1a1a1a';
+  x.font = `800 ${isStory?86:66}px -apple-system, "Helvetica Neue", sans-serif`;
+  const monthLabel = `${t('cal_months')[mo]} ${yr}`;
+  x.fillText(monthLabel, padL, y);
+  y += isStory ? 36 : 28;
+
+  x.strokeStyle = '#1a1a1a';
+  x.lineWidth = 3;
+  x.beginPath(); x.moveTo(padL, y); x.lineTo(padL + (isStory?120:96), y); x.stroke();
+  y += isStory ? 110 : 84;
+
+  // MAT TIME ラベル
+  x.fillStyle = '#a8a29a';
+  x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
+  drawTracked(x, t('share_mat_time'), padL, y, isStory?8:7);
+  y += isStory ? 30 : 22;
+
+  // 大きな時間
+  x.fillStyle = '#b07d3a';
+  const bigSize = isStory ? 260 : 190;
+  x.font = `800 ${bigSize}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(String(hrs), padL, y + bigSize*0.76);
+  const hw = x.measureText(String(hrs)).width;
+  x.fillStyle = '#1a1a1a';
+  x.font = `700 ${isStory?46:36}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText('HRS', padL + hw + (isStory?22:18), y + bigSize*0.76);
+  if(mins>0){
+    x.fillStyle = '#a8a29a';
+    x.font = `600 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillText(`${mins} MIN`, padL + hw + (isStory?22:18), y + bigSize*0.76 - (isStory?54:42));
+  }
+  y += isStory ? 250 : 180;
+
+  // セッション数
+  y += isStory ? 40 : 30;
+  x.fillStyle = '#a8a29a';
+  x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
+  drawTracked(x, t('share_sessions'), padL, y, isStory?8:7);
+  y += isStory ? 24 : 18;
+  x.fillStyle = '#1a1a1a';
+  x.font = `800 ${isStory?110:82}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(String(monthSessions.length), padL, y + (isStory?86:64));
+  y += isStory ? 130 : 96;
+
+  // 種別内訳（上位3つ）
+  const typeMap = {};
+  monthSessions.forEach(s=>{ typeMap[s.type]=(typeMap[s.type]||0)+1; });
+  const topTypes = Object.entries(typeMap).sort((a,b)=>b[1]-a[1]).slice(0, isStory?4:3);
+  if(topTypes.length){
+    y += isStory ? 30 : 20;
+    const maxCount = topTypes[0][1];
+    topTypes.forEach(([name,count])=>{
+      x.fillStyle = '#1a1a1a';
+      x.font = `600 ${isStory?36:28}px -apple-system, "Helvetica Neue", sans-serif`;
+      let nm = name;
+      if(x.measureText(nm).width > contentW*0.55){
+        while(x.measureText(nm+'…').width > contentW*0.55 && nm.length>1) nm=nm.slice(0,-1);
+        nm+='…';
+      }
+      x.fillText(nm, padL, y);
+      // バー
+      const barY = y + (isStory?14:11);
+      const barMaxW = contentW * 0.34;
+      const barW = (count/maxCount) * barMaxW;
+      x.fillStyle = '#e8e2d8';
+      x.fillRect(padR - barMaxW, barY - (isStory?18:14), barMaxW, isStory?10:8);
+      x.fillStyle = '#b07d3a';
+      x.fillRect(padR - barMaxW, barY - (isStory?18:14), barW, isStory?10:8);
+      // 回数
+      x.fillStyle = '#a8a29a';
+      x.font = `600 ${isStory?28:22}px -apple-system, "Helvetica Neue", sans-serif`;
+      x.fillText(String(count), padR + (isStory?14:10), y);
+      y += isStory ? 62 : 48;
+    });
+  }
+
+  drawFooter(x, W, H);
+}
+
+// 文字間隔を空けて描画
+function drawTracked(x, text, px, py, tracking){
+  let cx = px;
+  for(const ch of text){
+    x.fillText(ch, cx, py);
+    cx += x.measureText(ch).width + tracking;
+  }
+}
+
+function drawFooter(x, W, H){
+  const isStory = shareFormat==='story';
+  const padL = isStory ? 96 : 82;
+  const fy = H - (isStory ? 110 : 74);
+  x.fillStyle = '#c4bdb2';
+  x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
+  drawTracked(x, 'BJJ LOG', padL, fy, isStory?7:6);
 }
 
 
