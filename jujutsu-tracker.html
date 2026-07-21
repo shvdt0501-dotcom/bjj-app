@@ -2554,18 +2554,68 @@ function saveBeltColor(){ localStorage.setItem('bjj_belt', beltColor); }
 function setBeltColor(id){ beltColor=id; saveBeltColor(); renderShareModal(); }
 function getBelt(){ return BELT_COLORS.find(b=>b.id===beltColor) || BELT_COLORS[0]; }
 
+// 種別を英語表記に変換（シェア画像用）
+const TYPE_EN = {
+  // 日本語
+  'スパーリング':'Sparring','クラス':'Class','テクニック':'Technique','ドリル':'Drills',
+  '試合':'Competition','セルフトレーニング':'Solo Training','ノーギ':'No-Gi','筋トレ':'Strength','HIIT':'HIIT',
+  // ポルトガル語
+  'Aula':'Class','Técnica':'Technique','Competição':'Competition','Treino solo':'Solo Training','Musculação':'Strength',
+  // 韓国語
+  '스파링':'Sparring','수업':'Class','테크닉':'Technique','드릴':'Drills',
+  '시합':'Competition','자율 훈련':'Solo Training','노기':'No-Gi','웨이트':'Strength',
+  // 英語（そのまま）
+  'Sparring':'Sparring','Class':'Class','Technique':'Technique','Drills':'Drills',
+  'Competition':'Competition','Solo training':'Solo Training','No-Gi':'No-Gi','Strength':'Strength',
+};
+function getWeekRange(offset){
+  const now = new Date();
+  let dow = now.getDay(); dow = (dow===0)?6:dow-1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - dow - (offset*7));
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  sunday.setHours(23,59,59,999);
+  return { monday, sunday };
+}
+
+function typeEn(type){
+  if(!type) return '';
+  return TYPE_EN[type] || type;
+}
+
 let shareFormat = 'story'; // story(9:16) | post(1:1)
 let shareMode = 'session';  // session | week | stats
+let shareWeekOffset = 0;    // 0=今週, 1=先週, 2=先々週...
 let shareSessionId = null;
 
 function openShareModal(mode, sessionId){
   shareMode = mode;
   shareSessionId = sessionId || null;
   shareFormat = 'story';
+  if(mode==='week') shareWeekOffset = 0;
   renderShareModal();
 }
 
 function setShareFormat(f){ shareFormat=f; renderShareModal(); }
+function changeShareWeek(delta){
+  const next = shareWeekOffset + delta;
+  if(next < 0) return;
+  if(next > 52) return;
+  shareWeekOffset = next;
+  renderShareModal();
+}
+function shareWeekLabel(){
+  const { monday, sunday } = getWeekRange(shareWeekOffset);
+  const range = `${monday.getMonth()+1}/${monday.getDate()} — ${sunday.getMonth()+1}/${sunday.getDate()}`;
+  const { monday:m2, sunday:s2 } = getWeekRange(shareWeekOffset);
+  const cnt = sessions.filter(s=>{
+    const d = new Date(s.date);
+    return d>=m2 && d<=s2 && s.status==='done';
+  }).length;
+  return `${range}　·　${cnt}`;
+}
 
 function renderShareModal(){
   const belt = getBelt();
@@ -2575,6 +2625,12 @@ function renderShareModal(){
       <button class="${shareFormat==='story'?'btn-primary':'btn-secondary'}" style="flex:1" onclick="setShareFormat('story')">${t('share_story')}<br><span style="font-size:10px;opacity:0.7">9:16</span></button>
       <button class="${shareFormat==='post'?'btn-primary':'btn-secondary'}" style="flex:1" onclick="setShareFormat('post')">${t('share_post')}<br><span style="font-size:10px;opacity:0.7">1:1</span></button>
     </div>
+    ${shareMode==='week' ? `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;padding:8px 10px;background:#faf8f5;border:1px solid #eee;border-radius:8px">
+      <button onclick="changeShareWeek(1)" style="background:none;border:none;font-size:19px;cursor:pointer;color:#b07d3a;padding:2px 8px">‹</button>
+      <div style="font-size:13px;font-weight:600;color:#1a1a1a;text-align:center;flex:1">${shareWeekLabel()}</div>
+      <button onclick="changeShareWeek(-1)" ${shareWeekOffset===0?'disabled':''} style="background:none;border:none;font-size:19px;cursor:pointer;color:${shareWeekOffset===0?'#ddd':'#b07d3a'};padding:2px 8px">›</button>
+    </div>` : ''}
     <div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px">${t('share_belt')}</div>
     <div style="display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap">
       ${BELT_COLORS.map(b=>`<button onclick="setBeltColor('${b.id}')" title="${b.label}" style="width:40px;height:26px;border-radius:4px;cursor:pointer;padding:0;position:relative;overflow:hidden;background:${b.main};border:2px solid ${beltColor===b.id?'#b07d3a':'#e0e0e0'};box-shadow:${beltColor===b.id?'0 0 0 2px #b07d3a22':'none'}">
@@ -2688,11 +2744,12 @@ function drawSessionCard(x, W, H, belt){
   drawTracked(x, dateStr, padL, y, isStory?7:6);
   y += isStory ? 66 : 52;
 
-  // 種別
+  // 種別（英語・イタリック）
   x.fillStyle = '#1a1a1a';
-  const typeSize = fitText(x, s.type||'', contentW, isStory?76:60, `800 {s}px -apple-system, "Helvetica Neue", sans-serif`, 38);
-  x.font = `800 ${typeSize}px -apple-system, "Helvetica Neue", sans-serif`;
-  x.fillText(s.type||'', padL, y);
+  const typeLabel = typeEn(s.type);
+  const typeSize = fitText(x, typeLabel, contentW, isStory?80:62, `italic 800 {s}px "Helvetica Neue", -apple-system, sans-serif`, 38);
+  x.font = `italic 800 ${typeSize}px "Helvetica Neue", -apple-system, sans-serif`;
+  x.fillText(typeLabel, padL, y);
   y += isStory ? 36 : 26;
 
   // 区切り線
@@ -2787,11 +2844,8 @@ function drawWeekCard(x, W, H, belt){
   const contentW = padR - padL;
   let y = isStory ? 210 : 140;
 
-  // 今週の範囲（月曜始まり）
-  const now = new Date();
-  let dow = now.getDay(); dow = (dow===0)?6:dow-1;
-  const monday = new Date(now); monday.setDate(now.getDate()-dow); monday.setHours(0,0,0,0);
-  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
+  // 選択された週の範囲（月曜始まり）
+  const { monday, sunday } = getWeekRange(shareWeekOffset);
 
   const weekSessions = sessions.filter(s=>{
     const d = new Date(s.date);
@@ -2805,7 +2859,8 @@ function drawWeekCard(x, W, H, belt){
   // ヘッダー
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
-  drawTracked(x, t('share_week_label'), padL, y, isStory?8:7);
+  const weekLabel = shareWeekOffset===0 ? 'THIS WEEK' : (shareWeekOffset===1 ? 'LAST WEEK' : `${shareWeekOffset} WEEKS AGO`);
+  drawTracked(x, weekLabel, padL, y, isStory?8:7);
   y += isStory ? 58 : 46;
 
   x.fillStyle = '#1a1a1a';
@@ -2840,10 +2895,10 @@ function drawWeekCard(x, W, H, belt){
       x.font = `700 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
       const timeLabel = (s.startTime && s.endTime) ? `${s.startTime}–${s.endTime}` : `${s.duration}min`;
       x.fillText(timeLabel, padL + (isStory?76:60), y);
-      // 種別（右寄せ）
+      // 種別（右寄せ・英語イタリック）
       x.fillStyle = belt.text;
-      x.font = `600 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
-      let ty = s.type||'';
+      x.font = `italic 600 ${isStory?34:27}px "Helvetica Neue", -apple-system, sans-serif`;
+      let ty = typeEn(s.type);
       const tw = x.measureText(ty).width;
       const maxTypeW = contentW * 0.36;
       if(tw > maxTypeW){
@@ -2976,8 +3031,8 @@ function drawStatsCard(x, W, H, belt){
     const maxCount = topTypes[0][1];
     topTypes.forEach(([name,count])=>{
       x.fillStyle = '#1a1a1a';
-      x.font = `600 ${isStory?36:28}px -apple-system, "Helvetica Neue", sans-serif`;
-      let nm = name;
+      x.font = `italic 600 ${isStory?38:29}px "Helvetica Neue", -apple-system, sans-serif`;
+      let nm = typeEn(name);
       if(x.measureText(nm).width > contentW*0.55){
         while(x.measureText(nm+'…').width > contentW*0.55 && nm.length>1) nm=nm.slice(0,-1);
         nm+='…';
