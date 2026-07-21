@@ -273,6 +273,7 @@ const I18N = {
     search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
     nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
     stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
+    share_belt:'帯の色', share_week:'今週の記録をシェア', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
     share:'シェア', share_title:'画像でシェア', share_story:'ストーリー用', share_post:'投稿用',
     share_download:'画像を保存', share_share:'シェアする', share_generating:'作成中...',
     share_session:'この練習をシェア', share_stats:'今月の記録をシェア',
@@ -371,6 +372,7 @@ const I18N = {
     search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
     nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
     stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
+    share_belt:'Belt color', share_week:'Share this week', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
     share:'Share', share_title:'Share as image', share_story:'Story', share_post:'Post',
     share_download:'Save image', share_share:'Share', share_generating:'Generating...',
     share_session:'Share this session', share_stats:'Share this month',
@@ -469,6 +471,7 @@ const I18N = {
     search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
     nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
     stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
+    share_belt:'Cor da faixa', share_week:'Compartilhar a semana', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
     share:'Compartilhar', share_title:'Compartilhar imagem', share_story:'Story', share_post:'Post',
     share_download:'Salvar imagem', share_share:'Compartilhar', share_generating:'Gerando...',
     share_session:'Compartilhar este treino', share_stats:'Compartilhar o mês',
@@ -567,6 +570,7 @@ const I18N = {
     search_records:'훈련 기록', search_techniques:'기술', search_videos:'영상 메모', search_flowcharts:'플로우차트', search_results:'개의 결과',
     nav_stats:'통계', stats_time:'훈련 시간', stats_ranking:'기술·포지션', stats_condition:'컨디션', stats_breakdown:'종류별',
     stats_weekly:'주간', stats_monthly:'월간', stats_empty:'기록이 쌓이면\n여기에 통계가 표시됩니다',
+    share_belt:'벨트 색상', share_week:'이번 주 기록 공유', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
     share:'공유', share_title:'이미지로 공유', share_story:'스토리용', share_post:'게시물용',
     share_download:'이미지 저장', share_share:'공유하기', share_generating:'생성 중...',
     share_session:'이 훈련 공유하기', share_stats:'이번 달 기록 공유',
@@ -1767,7 +1771,10 @@ function renderStats(){
     return;
   }
 
-  html += `<div style="margin-bottom:14px"><button class="btn-secondary" style="width:100%;color:#b07d3a;border-color:#b07d3a33" onclick="openShareModal('stats')">📤 ${t('share_stats')}</button></div>`;
+  html += `<div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="btn-secondary" style="flex:1;color:#b07d3a;border-color:#b07d3a33;font-size:12px" onclick="openShareModal('week')">📤 ${t('share_week')}</button>
+    <button class="btn-secondary" style="flex:1;color:#b07d3a;border-color:#b07d3a33;font-size:12px" onclick="openShareModal('stats')">📤 ${t('share_stats')}</button>
+  </div>`;
 
   if(statsTab==='time')      html += renderStatsTime(done);
   if(statsTab==='ranking')   html += renderStatsRanking(done);
@@ -2533,8 +2540,22 @@ function importData(input){
 
 
 // ── SHARE（画像シェア） ──
+// 帯の色設定
+const BELT_COLORS = [
+  { id:'white',  label:'White',  main:'#f0ede8', bar:'#1a1a1a', text:'#1a1a1a' },
+  { id:'blue',   label:'Blue',   main:'#2f5d9e', bar:'#1a1a1a', text:'#2f5d9e' },
+  { id:'purple', label:'Purple', main:'#6b4c9a', bar:'#1a1a1a', text:'#6b4c9a' },
+  { id:'brown',  label:'Brown',  main:'#7a5230', bar:'#1a1a1a', text:'#7a5230' },
+  { id:'black',  label:'Black',  main:'#1a1a1a', bar:'#b03a3a', text:'#1a1a1a' },
+  { id:'coral',  label:'Coral',  main:'#c0392b', bar:'#f0ede8', text:'#c0392b' },
+];
+let beltColor = localStorage.getItem('bjj_belt') || 'white';
+function saveBeltColor(){ localStorage.setItem('bjj_belt', beltColor); }
+function setBeltColor(id){ beltColor=id; saveBeltColor(); renderShareModal(); }
+function getBelt(){ return BELT_COLORS.find(b=>b.id===beltColor) || BELT_COLORS[0]; }
+
 let shareFormat = 'story'; // story(9:16) | post(1:1)
-let shareMode = 'session';  // session | stats
+let shareMode = 'session';  // session | week | stats
 let shareSessionId = null;
 
 function openShareModal(mode, sessionId){
@@ -2547,11 +2568,18 @@ function openShareModal(mode, sessionId){
 function setShareFormat(f){ shareFormat=f; renderShareModal(); }
 
 function renderShareModal(){
+  const belt = getBelt();
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-title" style="margin-bottom:14px">${t('share_title')}</div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
+    <div style="display:flex;gap:8px;margin-bottom:14px">
       <button class="${shareFormat==='story'?'btn-primary':'btn-secondary'}" style="flex:1" onclick="setShareFormat('story')">${t('share_story')}<br><span style="font-size:10px;opacity:0.7">9:16</span></button>
       <button class="${shareFormat==='post'?'btn-primary':'btn-secondary'}" style="flex:1" onclick="setShareFormat('post')">${t('share_post')}<br><span style="font-size:10px;opacity:0.7">1:1</span></button>
+    </div>
+    <div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px">${t('share_belt')}</div>
+    <div style="display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap">
+      ${BELT_COLORS.map(b=>`<button onclick="setBeltColor('${b.id}')" title="${b.label}" style="width:40px;height:26px;border-radius:4px;cursor:pointer;padding:0;position:relative;overflow:hidden;background:${b.main};border:2px solid ${beltColor===b.id?'#b07d3a':'#e0e0e0'};box-shadow:${beltColor===b.id?'0 0 0 2px #b07d3a22':'none'}">
+        <span style="position:absolute;right:5px;top:0;bottom:0;width:8px;background:${b.bar}"></span>
+      </button>`).join('')}
     </div>
     <div id="share-preview" style="display:flex;justify-content:center;margin-bottom:16px;min-height:180px;align-items:center">
       <div style="color:#aaa;font-size:13px">${t('share_generating')}</div>
@@ -2591,33 +2619,43 @@ function downloadShareImage(){
 
 // ── 画像描画 ──
 function renderShareCanvas(){
-  const W = shareFormat==='story' ? 1080 : 1080;
+  const W = 1080;
   const H = shareFormat==='story' ? 1920 : 1080;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const x = c.getContext('2d');
+  const belt = getBelt();
 
   // 背景：生成りの紙
   x.fillStyle = '#faf7f2';
   x.fillRect(0,0,W,H);
 
-  // 微細なマットのテクスチャ（薄い格子）
+  // マットの目地
   x.strokeStyle = 'rgba(26,26,26,0.028)';
   x.lineWidth = 1;
   const grid = 54;
   for(let gx=0; gx<W; gx+=grid){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,H); x.stroke(); }
   for(let gy=0; gy<H; gy+=grid){ x.beginPath(); x.moveTo(0,gy); x.lineTo(W,gy); x.stroke(); }
 
-  // 署名要素：左端の帯ストライプ
-  const beltW = shareFormat==='story' ? 26 : 20;
-  x.fillStyle = '#1a1a1a';
+  // 署名要素：左端の帯（選択色 + 黒バー）
+  const beltW = shareFormat==='story' ? 30 : 24;
+  x.fillStyle = belt.main;
   x.fillRect(0,0,beltW,H);
-  x.fillStyle = '#b07d3a';
-  const stripeTop = shareFormat==='story' ? H*0.62 : H*0.60;
-  x.fillRect(0, stripeTop, beltW, shareFormat==='story' ? 220 : 150);
+  // 白帯など明るい色は境界線を入れる
+  if(belt.id==='white'){
+    x.strokeStyle = 'rgba(26,26,26,0.12)';
+    x.lineWidth = 2;
+    x.beginPath(); x.moveTo(beltW,0); x.lineTo(beltW,H); x.stroke();
+  }
+  // 帯のバー（黒帯の赤バーなど）
+  const barTop = shareFormat==='story' ? H*0.60 : H*0.58;
+  const barH = shareFormat==='story' ? 240 : 165;
+  x.fillStyle = belt.bar;
+  x.fillRect(0, barTop, beltW, barH);
 
-  if(shareMode==='session') drawSessionCard(x, W, H);
-  else drawStatsCard(x, W, H);
+  if(shareMode==='session')      drawSessionCard(x, W, H, belt);
+  else if(shareMode==='week')    drawWeekCard(x, W, H, belt);
+  else                           drawStatsCard(x, W, H, belt);
 
   return c;
 }
@@ -2632,58 +2670,83 @@ function fitText(x, text, maxW, startSize, font, minSize){
   return size;
 }
 
-function drawSessionCard(x, W, H){
+// ── 単一セッション：時刻を主役に ──
+function drawSessionCard(x, W, H, belt){
   const s = sessions.find(v=>v.id===shareSessionId);
   if(!s) return;
   const isStory = shareFormat==='story';
-  const padL = isStory ? 96 : 82;
+  const padL = isStory ? 108 : 88;
   const padR = W - (isStory ? 84 : 70);
   const contentW = padR - padL;
-  let y = isStory ? 200 : 130;
+  let y = isStory ? 210 : 140;
 
-  // 日付（小さく、トラッキング広め）
+  // 日付
   x.fillStyle = '#a8a29a';
   x.font = `500 ${isStory?30:26}px -apple-system, "Helvetica Neue", sans-serif`;
   const d = new Date(s.date);
   const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
   drawTracked(x, dateStr, padL, y, isStory?7:6);
-  y += isStory ? 70 : 56;
+  y += isStory ? 66 : 52;
 
-  // 種別（大きく）
+  // 種別
   x.fillStyle = '#1a1a1a';
-  const typeSize = fitText(x, s.type||'', contentW, isStory?96:76, `800 {s}px -apple-system, "Helvetica Neue", sans-serif`, 44);
+  const typeSize = fitText(x, s.type||'', contentW, isStory?76:60, `800 {s}px -apple-system, "Helvetica Neue", sans-serif`, 38);
   x.font = `800 ${typeSize}px -apple-system, "Helvetica Neue", sans-serif`;
   x.fillText(s.type||'', padL, y);
-  y += isStory ? 40 : 30;
+  y += isStory ? 36 : 26;
 
   // 区切り線
   x.strokeStyle = '#1a1a1a';
   x.lineWidth = 3;
   x.beginPath(); x.moveTo(padL, y); x.lineTo(padL + (isStory?120:96), y); x.stroke();
-  y += isStory ? 90 : 70;
+  y += isStory ? 96 : 74;
 
-  // 時間（主役の数字）
-  const hrs = Math.floor(s.duration/60), mins = s.duration%60;
-  const timeStr = hrs>0 ? `${hrs}:${String(mins).padStart(2,'0')}` : `${mins}`;
-  const timeUnit = hrs>0 ? 'HRS' : 'MIN';
-  x.fillStyle = '#b07d3a';
-  x.font = `800 ${isStory?200:150}px -apple-system, "Helvetica Neue", sans-serif`;
-  x.fillText(timeStr, padL, y + (isStory?150:112));
-  const tw = x.measureText(timeStr).width;
-  x.fillStyle = '#1a1a1a';
-  x.font = `700 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
-  x.fillText(timeUnit, padL + tw + (isStory?20:16), y + (isStory?150:112));
-  y += isStory ? 190 : 145;
-
-  // 時刻レンジ
+  // ── 主役：開始 → 終了時刻 ──
   if(s.startTime && s.endTime){
+    const timeSize = isStory ? 152 : 112;
+    x.font = `800 ${timeSize}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillStyle = belt.text;
+    x.fillText(s.startTime, padL, y + timeSize*0.74);
+    const sw = x.measureText(s.startTime).width;
+
+    // 縦の区切り（矢印の代わりに帯色の細いバー）
+    const dashX = padL + sw + (isStory?34:26);
+    x.fillStyle = '#d6cec2';
+    x.fillRect(dashX, y + timeSize*0.42, isStory?46:34, isStory?7:5);
+
+    // 終了時刻を次の行に大きく
+    y += isStory ? 152 : 112;
+    x.fillStyle = belt.text;
+    x.font = `800 ${timeSize}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillText(s.endTime, padL, y + timeSize*0.74);
+    y += isStory ? 178 : 132;
+
+    // 合計時間は控えめに添える
     x.fillStyle = '#a8a29a';
-    x.font = `500 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
-    drawTracked(x, `${s.startTime} — ${s.endTime}`, padL, y, isStory?4:3);
-    y += isStory ? 66 : 52;
+    x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
+    drawTracked(x, t('share_mat_time'), padL, y, isStory?7:6);
+    y += isStory ? 46 : 36;
+    x.fillStyle = '#1a1a1a';
+    x.font = `700 ${isStory?52:40}px -apple-system, "Helvetica Neue", sans-serif`;
+    const hh = Math.floor(s.duration/60), mm = s.duration%60;
+    x.fillText(hh>0 ? `${hh}h ${mm>0?mm+'m':''}`.trim() : `${mm}m`, padL, y);
+    y += isStory ? 72 : 56;
+  } else {
+    // 時刻がない場合は合計時間を主役に
+    const hrs = Math.floor(s.duration/60), mins = s.duration%60;
+    const timeStr = hrs>0 ? `${hrs}:${String(mins).padStart(2,'0')}` : `${mins}`;
+    const unit = hrs>0 ? 'HRS' : 'MIN';
+    x.fillStyle = belt.text;
+    x.font = `800 ${isStory?200:150}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillText(timeStr, padL, y + (isStory?150:112));
+    const tw = x.measureText(timeStr).width;
+    x.fillStyle = '#1a1a1a';
+    x.font = `700 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillText(unit, padL + tw + (isStory?20:16), y + (isStory?150:112));
+    y += isStory ? 210 : 160;
   }
 
-  y += isStory ? 30 : 22;
+  y += isStory ? 24 : 16;
 
   // 技リスト
   const techs = (s.techniques||[]).map(tk=>tk.name).filter(Boolean);
@@ -2692,39 +2755,159 @@ function drawSessionCard(x, W, H){
     x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
     drawTracked(x, t('share_techniques'), padL, y, isStory?6:5);
     y += isStory ? 52 : 42;
-
-    x.fillStyle = '#1a1a1a';
-    const maxShow = isStory ? 6 : 4;
+    const maxShow = isStory ? 5 : 3;
     techs.slice(0, maxShow).forEach(name=>{
-      x.font = `600 ${isStory?40:32}px -apple-system, "Helvetica Neue", sans-serif`;
-      // 行頭のダッシュ
-      x.fillStyle = '#b07d3a';
-      x.fillRect(padL, y - (isStory?14:11), isStory?22:18, 3);
+      x.font = `600 ${isStory?38:31}px -apple-system, "Helvetica Neue", sans-serif`;
+      x.fillStyle = belt.text;
+      x.fillRect(padL, y - (isStory?13:10), isStory?20:16, 3);
       x.fillStyle = '#1a1a1a';
       let nm = name;
-      if(x.measureText(nm).width > contentW - (isStory?44:36)){
-        while(x.measureText(nm+'…').width > contentW - (isStory?44:36) && nm.length>1) nm = nm.slice(0,-1);
+      if(x.measureText(nm).width > contentW - (isStory?42:34)){
+        while(x.measureText(nm+'…').width > contentW - (isStory?42:34) && nm.length>1) nm = nm.slice(0,-1);
         nm += '…';
       }
-      x.fillText(nm, padL + (isStory?44:36), y);
-      y += isStory ? 58 : 46;
+      x.fillText(nm, padL + (isStory?42:34), y);
+      y += isStory ? 56 : 44;
     });
     if(techs.length > maxShow){
       x.fillStyle = '#a8a29a';
-      x.font = `500 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
-      x.fillText(`+${techs.length-maxShow}`, padL + (isStory?44:36), y);
+      x.font = `500 ${isStory?30:24}px -apple-system, "Helvetica Neue", sans-serif`;
+      x.fillText(`+${techs.length-maxShow}`, padL + (isStory?42:34), y);
     }
   }
 
   drawFooter(x, W, H);
 }
 
-function drawStatsCard(x, W, H){
+// ── 週間：スケジュール型 ──
+function drawWeekCard(x, W, H, belt){
   const isStory = shareFormat==='story';
-  const padL = isStory ? 96 : 82;
+  const padL = isStory ? 108 : 88;
   const padR = W - (isStory ? 84 : 70);
   const contentW = padR - padL;
-  let y = isStory ? 200 : 130;
+  let y = isStory ? 210 : 140;
+
+  // 今週の範囲（月曜始まり）
+  const now = new Date();
+  let dow = now.getDay(); dow = (dow===0)?6:dow-1;
+  const monday = new Date(now); monday.setDate(now.getDate()-dow); monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
+
+  const weekSessions = sessions.filter(s=>{
+    const d = new Date(s.date);
+    return d>=monday && d<=sunday && s.status==='done';
+  }).sort((a,b)=>a.date.localeCompare(b.date));
+
+  const totalMin = weekSessions.reduce((a,b)=>a+(b.duration||0),0);
+  const hrs = Math.floor(totalMin/60), mins = totalMin%60;
+  const trainDays = new Set(weekSessions.map(s=>s.date)).size;
+
+  // ヘッダー
+  x.fillStyle = '#a8a29a';
+  x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
+  drawTracked(x, t('share_week_label'), padL, y, isStory?8:7);
+  y += isStory ? 58 : 46;
+
+  x.fillStyle = '#1a1a1a';
+  x.font = `800 ${isStory?66:52}px -apple-system, "Helvetica Neue", sans-serif`;
+  const mLabel = `${monday.getMonth()+1}/${monday.getDate()} — ${sunday.getMonth()+1}/${sunday.getDate()}`;
+  x.fillText(mLabel, padL, y);
+  y += isStory ? 34 : 26;
+
+  x.strokeStyle = '#1a1a1a';
+  x.lineWidth = 3;
+  x.beginPath(); x.moveTo(padL, y); x.lineTo(padL + (isStory?120:96), y); x.stroke();
+  y += isStory ? 84 : 64;
+
+  // 日別リスト（スケジュール型）
+  const dowLabels = t('cal_dow');
+  const maxRows = isStory ? 7 : 5;
+  let shown = 0;
+  for(let i=0; i<7 && shown<maxRows; i++){
+    const day = new Date(monday); day.setDate(monday.getDate()+i);
+    const ds = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+    const daySessions = weekSessions.filter(s=>s.date===ds);
+    if(!daySessions.length) continue;
+
+    daySessions.forEach(s=>{
+      if(shown>=maxRows) return;
+      // 曜日
+      x.fillStyle = '#a8a29a';
+      x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
+      x.fillText(dowLabels[i], padL, y);
+      // 時刻 or 時間
+      x.fillStyle = '#1a1a1a';
+      x.font = `700 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
+      const timeLabel = (s.startTime && s.endTime) ? `${s.startTime}–${s.endTime}` : `${s.duration}min`;
+      x.fillText(timeLabel, padL + (isStory?76:60), y);
+      // 種別（右寄せ）
+      x.fillStyle = belt.text;
+      x.font = `600 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
+      let ty = s.type||'';
+      const tw = x.measureText(ty).width;
+      const maxTypeW = contentW * 0.36;
+      if(tw > maxTypeW){
+        while(x.measureText(ty+'…').width > maxTypeW && ty.length>1) ty = ty.slice(0,-1);
+        ty += '…';
+      }
+      x.fillText(ty, padR - x.measureText(ty).width, y);
+      y += isStory ? 62 : 48;
+      shown++;
+    });
+  }
+
+  if(weekSessions.length > maxRows){
+    x.fillStyle = '#a8a29a';
+    x.font = `500 ${isStory?30:24}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillText(`+${weekSessions.length-maxRows}`, padL, y);
+    y += isStory ? 54 : 42;
+  }
+
+  // 合計（下部に大きく）
+  y = isStory ? H - 560 : H - 330;
+  x.strokeStyle = '#e0d9cf';
+  x.lineWidth = 2;
+  x.beginPath(); x.moveTo(padL, y); x.lineTo(padR, y); x.stroke();
+  y += isStory ? 74 : 56;
+
+  x.fillStyle = '#a8a29a';
+  x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
+  drawTracked(x, t('share_mat_time'), padL, y, isStory?8:7);
+  y += isStory ? 28 : 20;
+
+  x.fillStyle = belt.text;
+  const bigSize = isStory ? 190 : 140;
+  x.font = `800 ${bigSize}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText(String(hrs), padL, y + bigSize*0.76);
+  const hw = x.measureText(String(hrs)).width;
+  x.fillStyle = '#1a1a1a';
+  x.font = `700 ${isStory?42:32}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText('HRS', padL + hw + (isStory?20:16), y + bigSize*0.76);
+  if(mins>0){
+    x.fillStyle = '#a8a29a';
+    x.font = `600 ${isStory?32:26}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillText(`${mins} MIN`, padL + hw + (isStory?20:16), y + bigSize*0.76 - (isStory?48:38));
+  }
+
+  // 右側に日数
+  x.fillStyle = '#a8a29a';
+  x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
+  const dLabel = t('share_days');
+  drawTracked(x, dLabel, padR - (isStory?130:100), y, isStory?6:5);
+  x.fillStyle = '#1a1a1a';
+  x.font = `800 ${isStory?92:70}px -apple-system, "Helvetica Neue", sans-serif`;
+  const dw = x.measureText(String(trainDays)).width;
+  x.fillText(String(trainDays), padR - dw, y + (isStory?92:70));
+
+  drawFooter(x, W, H);
+}
+
+function drawStatsCard(x, W, H, belt){
+  const isStory = shareFormat==='story';
+  const padL = isStory ? 108 : 88;
+  const padR = W - (isStory ? 84 : 70);
+  const contentW = padR - padL;
+  let y = isStory ? 210 : 140;
 
   const now = new Date();
   const yr = now.getFullYear(), mo = now.getMonth();
@@ -2735,18 +2918,16 @@ function drawStatsCard(x, W, H){
   const totalMin = monthSessions.reduce((a,b)=>a+(b.duration||0),0);
   const hrs = Math.floor(totalMin/60);
   const mins = totalMin%60;
+  const trainDays = new Set(monthSessions.map(s=>s.date)).size;
 
-  // 見出し
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, t('share_this_month'), padL, y, isStory?8:7);
   y += isStory ? 58 : 46;
 
-  // 月名
   x.fillStyle = '#1a1a1a';
   x.font = `800 ${isStory?86:66}px -apple-system, "Helvetica Neue", sans-serif`;
-  const monthLabel = `${t('cal_months')[mo]} ${yr}`;
-  x.fillText(monthLabel, padL, y);
+  x.fillText(`${t('cal_months')[mo]} ${yr}`, padL, y);
   y += isStory ? 36 : 28;
 
   x.strokeStyle = '#1a1a1a';
@@ -2754,14 +2935,12 @@ function drawStatsCard(x, W, H){
   x.beginPath(); x.moveTo(padL, y); x.lineTo(padL + (isStory?120:96), y); x.stroke();
   y += isStory ? 110 : 84;
 
-  // MAT TIME ラベル
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, t('share_mat_time'), padL, y, isStory?8:7);
   y += isStory ? 30 : 22;
 
-  // 大きな時間
-  x.fillStyle = '#b07d3a';
+  x.fillStyle = belt.text;
   const bigSize = isStory ? 260 : 190;
   x.font = `800 ${bigSize}px -apple-system, "Helvetica Neue", sans-serif`;
   x.fillText(String(hrs), padL, y + bigSize*0.76);
@@ -2776,18 +2955,19 @@ function drawStatsCard(x, W, H){
   }
   y += isStory ? 250 : 180;
 
-  // セッション数
+  // セッション数と日数を横並び
   y += isStory ? 40 : 30;
   x.fillStyle = '#a8a29a';
   x.font = `700 ${isStory?26:22}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, t('share_sessions'), padL, y, isStory?8:7);
+  drawTracked(x, t('share_days'), padL + contentW*0.5, y, isStory?8:7);
   y += isStory ? 24 : 18;
   x.fillStyle = '#1a1a1a';
   x.font = `800 ${isStory?110:82}px -apple-system, "Helvetica Neue", sans-serif`;
   x.fillText(String(monthSessions.length), padL, y + (isStory?86:64));
+  x.fillText(String(trainDays), padL + contentW*0.5, y + (isStory?86:64));
   y += isStory ? 130 : 96;
 
-  // 種別内訳（上位3つ）
   const typeMap = {};
   monthSessions.forEach(s=>{ typeMap[s.type]=(typeMap[s.type]||0)+1; });
   const topTypes = Object.entries(typeMap).sort((a,b)=>b[1]-a[1]).slice(0, isStory?4:3);
@@ -2803,15 +2983,13 @@ function drawStatsCard(x, W, H){
         nm+='…';
       }
       x.fillText(nm, padL, y);
-      // バー
       const barY = y + (isStory?14:11);
       const barMaxW = contentW * 0.34;
       const barW = (count/maxCount) * barMaxW;
       x.fillStyle = '#e8e2d8';
       x.fillRect(padR - barMaxW, barY - (isStory?18:14), barMaxW, isStory?10:8);
-      x.fillStyle = '#b07d3a';
+      x.fillStyle = belt.text;
       x.fillRect(padR - barMaxW, barY - (isStory?18:14), barW, isStory?10:8);
-      // 回数
       x.fillStyle = '#a8a29a';
       x.font = `600 ${isStory?28:22}px -apple-system, "Helvetica Neue", sans-serif`;
       x.fillText(String(count), padR + (isStory?14:10), y);
@@ -2822,7 +3000,6 @@ function drawStatsCard(x, W, H){
   drawFooter(x, W, H);
 }
 
-// 文字間隔を空けて描画
 function drawTracked(x, text, px, py, tracking){
   let cx = px;
   for(const ch of text){
@@ -2833,7 +3010,7 @@ function drawTracked(x, text, px, py, tracking){
 
 function drawFooter(x, W, H){
   const isStory = shareFormat==='story';
-  const padL = isStory ? 96 : 82;
+  const padL = isStory ? 108 : 88;
   const fy = H - (isStory ? 110 : 74);
   x.fillStyle = '#c4bdb2';
   x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
