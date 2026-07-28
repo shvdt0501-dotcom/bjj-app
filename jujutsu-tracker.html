@@ -156,7 +156,7 @@
     <button id="nav-library" onclick="showView('library')">技ライブラリ</button>
     <button id="nav-videos" onclick="showView('videos')">動画メモ</button>
     <button id="nav-flowchart" onclick="showView('flowchart')">フローチャート</button>
-    <button id="nav-stats" onclick="showView('stats')">統計</button>
+    <button id="nav-skilltree" onclick="showView('skilltree-list')">スキルツリー</button>
   </nav>
 </div>
 <div id="view-dashboard" class="page"></div>
@@ -168,6 +168,7 @@
 <div id="view-videos" class="page hidden"></div>
 <div id="view-flowchart" class="page hidden"></div>
 <div id="view-flowchart-detail" class="page hidden"></div>
+<div id="view-skilltree-list" class="page hidden"></div>
 <div id="view-skilltree" class="page hidden"></div>
 <div id="view-stats" class="page hidden"></div>
 <div id="view-search" class="page hidden"></div>
@@ -668,7 +669,7 @@ function applyStaticLabels(){
   document.getElementById('nav-library').textContent=t('nav_library');
   document.getElementById('nav-videos').textContent=t('nav_videos');
   document.getElementById('nav-flowchart').textContent=t('nav_flowchart');
-  document.getElementById('nav-stats').textContent=t('nav_stats');
+  document.getElementById('nav-skilltree').textContent=t('skilltree');
   document.querySelector('#header h1').textContent=t('app_title');
 }
 function openLangModal(){
@@ -797,17 +798,17 @@ function saveFlowcharts() {
 load();
 
 // ── ナビ ──
-const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','skilltree','stats','search','import'];
+const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','skilltree-list','skilltree','stats','search','import'];
 function showView(v) {
   ALL_VIEWS.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x!==v));
   const nav = document.getElementById('main-nav');
   const fab = document.getElementById('fab');
   if (v==='form') { nav.classList.add('hidden'); fab.classList.add('hidden'); }
-  else if (v==='stats' || v==='search' || v==='import' || v==='skilltree') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
+  else if (v==='stats' || v==='search' || v==='import' || v==='skilltree' || v==='skilltree-list') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
   else { nav.classList.remove('hidden'); fab.classList.remove('hidden'); }
-  ['dashboard','list','library','videos','flowchart','stats'].forEach(x => {
+  ['dashboard','list','library','videos','flowchart','skilltree'].forEach(x => {
     const btn = document.getElementById('nav-'+x);
-    if(btn) btn.classList.toggle('active', x===v || (v==='detail'&&x==='list') || (v==='tech-detail'&&x==='library') || (v==='flowchart-detail'&&x==='flowchart'));
+    if(btn) btn.classList.toggle('active', x===v || (v==='detail'&&x==='list') || (v==='tech-detail'&&x==='library') || (v==='flowchart-detail'&&x==='flowchart') || (v==='skilltree-list'&&x==='skilltree') || (v==='skilltree'&&x==='skilltree'));
   });
   currentView = v;
   render();
@@ -829,6 +830,7 @@ function render() {
   if(currentView==='videos')      renderVideos();
   if(currentView==='flowchart')   renderFlowchartList();
   if(currentView==='flowchart-detail') renderFlowchartDetail();
+  if(currentView==='skilltree-list') renderSkillTreeList();
   if(currentView==='skilltree') renderSkillTree();
   if(currentView==='stats') renderStats();
   if(currentView==='search') renderSearch();
@@ -876,11 +878,46 @@ function renderDashboard() {
     <div class="stat-card"><div class="stat-num">${avgR}</div><div class="stat-label">${t('stat_avg')}</div></div>
   </div>`;
 
-  html+=`<p class="section-title">${t('recent_title')}</p>`;
-  const recent=sessions.slice(0,5);
-  if(!recent.length) html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">${t('empty_dashboard')}</div></div>`;
-  recent.forEach(s=>{ html+=sessionItemHtml(s); });
+  // 統計をホームに埋め込み
+  if(done.length){
+    html += renderStatsEmbed();
+  } else {
+    html+=`<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">${t('empty_dashboard')}</div></div>`;
+  }
+
   document.getElementById('view-dashboard').innerHTML=html;
+}
+
+// ホーム埋め込み用の統計（タブ切り替え式）
+function renderStatsEmbed(){
+  const done = sessions.filter(s=>s.status==='done');
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin:8px 2px 12px">
+    <p class="section-title" style="margin:0">${t('nav_stats')}</p>
+    <button class="btn-secondary" style="font-size:11px;padding:5px 10px;color:#b07d3a;border-color:#b07d3a33" onclick="openShareModal('stats')">📤 ${t('share')}</button>
+  </div>`;
+  html += `<div class="stats-tabs">
+    <button class="stats-tab ${statsTab==='time'?'active':''}" onclick="setStatsTab('time')">⏱ ${t('stats_time')}</button>
+    <button class="stats-tab ${statsTab==='ranking'?'active':''}" onclick="setStatsTab('ranking')">🏆 ${t('stats_ranking')}</button>
+    <button class="stats-tab ${statsTab==='condition'?'active':''}" onclick="setStatsTab('condition')">📈 ${t('stats_condition')}</button>
+    <button class="stats-tab ${statsTab==='breakdown'?'active':''}" onclick="setStatsTab('breakdown')">🍩 ${t('stats_breakdown')}</button>
+  </div>`;
+
+  const usePeriod = statsTab !== 'time';
+  let scoped = done;
+  if(usePeriod){
+    html += renderPeriodNav();
+    scoped = filterByStatsPeriod(done);
+  }
+  if(statsTab==='time'){
+    html += renderStatsTime(done);
+  } else if(!scoped.length){
+    html += `<div class="card" style="text-align:center;padding:28px;color:#aaa;font-size:14px">${t('stats_no_data_period')}</div>`;
+  } else {
+    if(statsTab==='ranking')   html += renderStatsRanking(scoped);
+    if(statsTab==='condition') html += renderStatsCondition(scoped);
+    if(statsTab==='breakdown') html += renderStatsBreakdown(scoped);
+  }
+  return html;
 }
 
 function renderCalendarHtml(year, month) {
@@ -1811,13 +1848,17 @@ let statsTimeRange = 'weekly'; // weekly | monthly
 let statsPeriod = 'month';  // week | month | all
 let statsOffset = 0;        // 0=今期, 1=前期, ...
 
-function setStatsPeriod(p){ statsPeriod=p; statsOffset=0; renderStats(); }
+function refreshStatsView(){
+  if(currentView==='dashboard') renderDashboard();
+  else renderStats();
+}
+function setStatsPeriod(p){ statsPeriod=p; statsOffset=0; refreshStatsView(); }
 function changeStatsOffset(delta){
   const next = statsOffset + delta;
   if(next < 0) return;
   if(next > 120) return;
   statsOffset = next;
-  renderStats();
+  refreshStatsView();
 }
 
 // 選択中の期間の範囲を返す（allならnull）
@@ -1929,9 +1970,9 @@ function renderPeriodNav(){
   </div>`;
 }
 
-function setStatsTab(tab){ statsTab=tab; renderStats(); }
-function setStatsTimeRange(r){ statsTimeRange=r; statsChartOffset=0; renderStats(); }
-function setStatsRankMode(m){ statsRankMode=m; renderStats(); }
+function setStatsTab(tab){ statsTab=tab; refreshStatsView(); }
+function setStatsTimeRange(r){ statsTimeRange=r; statsChartOffset=0; refreshStatsView(); }
+function setStatsRankMode(m){ statsRankMode=m; refreshStatsView(); }
 
 // ① 練習時間グラフ（棒グラフ）— 過去へスクロール可能
 let statsChartOffset = 0; // 0=最新, 1=1区間前...
@@ -1940,7 +1981,7 @@ function changeChartOffset(delta){
   if(next < 0) return;
   if(next > 60) return;
   statsChartOffset = next;
-  renderStats();
+  refreshStatsView();
 }
 
 function renderStatsTime(done){
@@ -3406,6 +3447,55 @@ function drawFooter(x, W, H){
 let skillTreeId = null;
 let stZoom = { scale:1, tx:20, ty:20 };
 
+function renderSkillTreeList(){
+  let html = `<p class="section-title">${t('skilltree')}</p>`;
+  html += `<div style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.5">${t('skilltree_hint')}</div>`;
+
+  if(!flowcharts.length){
+    html += `<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">🥋</div><div style="color:#aaa;font-size:14px">${t('st_no_flowchart')}</div><button class="btn-secondary" style="margin-top:14px" onclick="showView('flowchart')">${t('nav_flowchart')} →</button></div>`;
+    document.getElementById('view-skilltree-list').innerHTML = html;
+    return;
+  }
+
+  flowcharts.forEach(fc=>{
+    // このツリーの到達度：最高帯と合計スター
+    let maxBelt = BELT_TIERS[0], totalStars = 0, litNodes = 0, totalNodes = 0;
+    function walk(nodes){
+      (nodes||[]).forEach(n=>{
+        if(!n.move) return;
+        totalNodes++;
+        const d = totalDrills(n);
+        const b = beltForDrills(d);
+        if(BELT_TIERS.indexOf(b) > BELT_TIERS.indexOf(maxBelt)) maxBelt = b;
+        if(d>=10) litNodes++;
+        totalStars += (n.stars||0);
+        walk(n.children);
+      });
+    }
+    walk(fc.nodes);
+
+    const beltSwatch = maxBelt.id==='locked'
+      ? `<div style="width:44px;height:14px;border-radius:3px;background:#d0ccc4;border:1px solid #bbb5aa"></div>`
+      : `<div style="width:44px;height:14px;border-radius:3px;background:${maxBelt.id==='coral'?'linear-gradient(90deg,#c0392b 50%,#f2efe9 50%)':maxBelt.color};border:1px solid ${maxBelt.edge}"></div>`;
+
+    html += `<div class="session-item" onclick="openSkillTree(${fc.id})">
+      <div class="flex-between">
+        <div style="flex:1">
+          <div class="session-type">${esc(fc.title||t('untitled'))}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            ${beltSwatch}
+            <span style="font-size:12px;color:#aaa">${litNodes}/${totalNodes}</span>
+            ${totalStars>0?`<span style="font-size:12px;color:#e8c04a">⭐️${totalStars}</span>`:''}
+          </div>
+        </div>
+        <span style="font-size:11px;color:#b07d3a">${t('open')}</span>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('view-skilltree-list').innerHTML = html;
+}
+
 function openSkillTree(fcId){
   skillTreeId = fcId;
   showView('skilltree');
@@ -3434,7 +3524,7 @@ function renderSkillTree(){
   if(!fc){ showView('flowchart'); return; }
 
   let html = `<div class="flex-row" style="margin-bottom:14px">
-    <button class="btn-secondary" onclick="openFlowchart(${fc.id})">← ${t('back_list')}</button>
+    <button class="btn-secondary" onclick="showView('skilltree-list')">← ${t('back_list')}</button>
   </div>`;
   html += `<div style="font-size:20px;font-weight:700;margin-bottom:4px">🥋 ${esc(fc.title||t('untitled'))}</div>`;
   html += `<div style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.5">${t('skilltree_hint')}</div>`;
