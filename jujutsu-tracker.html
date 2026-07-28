@@ -83,6 +83,12 @@
     .vmemo-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
     .vmemo-note { font-size: 13px; color: #666; margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
     /* フローチャート（グラフ図） */
+    /* スキルツリー */
+    .st-canvas-wrap { background: #14110d; border-radius: 12px; overflow: hidden; height: 500px; position: relative; touch-action: none; margin-bottom: 12px; }
+    .st-canvas-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+    .st-node { position: absolute; box-sizing: border-box; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; }
+    .st-node:active { transform: scale(0.95); }
+    .st-belt-band { width: 100%; height: 10px; border-radius: 3px; margin-top: 4px; position: relative; overflow: hidden; }
     .fc-canvas-wrap { background: #faf8f5; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; margin-bottom: 12px; height: 480px; position: relative; touch-action: none; }
     .fc-canvas-inner { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
     .fc-graph-node { position: absolute; box-sizing: border-box; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
@@ -162,6 +168,7 @@
 <div id="view-videos" class="page hidden"></div>
 <div id="view-flowchart" class="page hidden"></div>
 <div id="view-flowchart-detail" class="page hidden"></div>
+<div id="view-skilltree" class="page hidden"></div>
 <div id="view-stats" class="page hidden"></div>
 <div id="view-search" class="page hidden"></div>
 <div id="view-import" class="page hidden"></div>
@@ -274,6 +281,9 @@ const I18N = {
     nav_stats:'統計', stats_time:'練習時間', stats_ranking:'技・ポジション', stats_condition:'コンディション', stats_breakdown:'種別内訳',
     stats_period_week:'週', stats_period_month:'月', stats_all_time:'全期間', stats_no_data_period:'この期間の記録がありません',
     stats_weekly:'週間', stats_monthly:'月間', stats_empty:'記録が増えると\nここに統計が表示されます',
+    skilltree:'スキルツリー', skilltree_hint:'ドリルを重ねると技の帯が昇格します。スパーで極めたら⭐️が貯まります。', skilltree_empty_node:'技名が未入力のノードは表示されません',
+    st_drills:'ドリル', st_stars:'実践', st_to_next:'次の帯まであと', st_maxed:'最高到達！', st_add_drill:'ドリル+1', st_add_star:'⭐️+1', st_tap_hint:'ノードをタップして記録',
+    st_belt_locked:'未習得', st_reps:'回', st_no_flowchart:'先にフローチャートを作成してください',
     share_items:'表示する項目', share_f_date:'日付', share_f_type:'種別', share_f_time:'時刻', share_f_duration:'練習時間',
     share_f_tech:'技', share_f_partner:'相手・道場', share_f_goal:'目標', share_f_notes:'メモ', share_f_rating:'コンディション',
     share_belt:'帯の色', share_week:'今週の記録をシェア', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
@@ -376,6 +386,9 @@ const I18N = {
     nav_stats:'Stats', stats_time:'Training time', stats_ranking:'Tech & Position', stats_condition:'Condition', stats_breakdown:'By type',
     stats_period_week:'Week', stats_period_month:'Month', stats_all_time:'All time', stats_no_data_period:'No records in this period',
     stats_weekly:'Weekly', stats_monthly:'Monthly', stats_empty:'Statistics will appear here\nas you add more records',
+    skilltree:'Skill Tree', skilltree_hint:'Drilling promotes each technique\'s belt. Land it in sparring to earn ⭐️.', skilltree_empty_node:'Nodes without a name are hidden',
+    st_drills:'Drills', st_stars:'Live', st_to_next:'To next belt', st_maxed:'Maxed out!', st_add_drill:'Drill +1', st_add_star:'⭐️ +1', st_tap_hint:'Tap a node to log',
+    st_belt_locked:'Locked', st_reps:'reps', st_no_flowchart:'Create a flowchart first',
     share_items:'Items to show', share_f_date:'Date', share_f_type:'Type', share_f_time:'Time', share_f_duration:'Duration',
     share_f_tech:'Techniques', share_f_partner:'Partner / gym', share_f_goal:'Goal', share_f_notes:'Notes', share_f_rating:'Condition',
     share_belt:'Belt color', share_week:'Share this week', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
@@ -478,6 +491,9 @@ const I18N = {
     nav_stats:'Estatísticas', stats_time:'Tempo de treino', stats_ranking:'Técnica e Posição', stats_condition:'Condição', stats_breakdown:'Por tipo',
     stats_period_week:'Semana', stats_period_month:'Mês', stats_all_time:'Tudo', stats_no_data_period:'Sem registros neste período',
     stats_weekly:'Semanal', stats_monthly:'Mensal', stats_empty:'As estatísticas aparecerão aqui\nconforme você adiciona registros',
+    skilltree:'Árvore', skilltree_hint:'Treinar promove a faixa de cada técnica. Aplique no sparring para ganhar ⭐️.', skilltree_empty_node:'Nós sem nome ficam ocultos',
+    st_drills:'Treinos', st_stars:'Real', st_to_next:'Próxima faixa', st_maxed:'No máximo!', st_add_drill:'Treino +1', st_add_star:'⭐️ +1', st_tap_hint:'Toque em um nó para registrar',
+    st_belt_locked:'Bloqueado', st_reps:'reps', st_no_flowchart:'Crie um fluxograma primeiro',
     share_items:'Itens a exibir', share_f_date:'Data', share_f_type:'Tipo', share_f_time:'Horário', share_f_duration:'Duração',
     share_f_tech:'Técnicas', share_f_partner:'Parceiro / academia', share_f_goal:'Meta', share_f_notes:'Notas', share_f_rating:'Condição',
     share_belt:'Cor da faixa', share_week:'Compartilhar a semana', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
@@ -580,6 +596,9 @@ const I18N = {
     nav_stats:'통계', stats_time:'훈련 시간', stats_ranking:'기술·포지션', stats_condition:'컨디션', stats_breakdown:'종류별',
     stats_period_week:'주', stats_period_month:'월', stats_all_time:'전체', stats_no_data_period:'이 기간의 기록이 없습니다',
     stats_weekly:'주간', stats_monthly:'월간', stats_empty:'기록이 쌓이면\n여기에 통계가 표시됩니다',
+    skilltree:'스킬 트리', skilltree_hint:'드릴을 쌓으면 기술의 벨트가 승급합니다. 스파링에서 성공하면 ⭐️가 쌓입니다.', skilltree_empty_node:'이름이 없는 노드는 표시되지 않습니다',
+    st_drills:'드릴', st_stars:'실전', st_to_next:'다음 벨트까지', st_maxed:'최고 도달!', st_add_drill:'드릴+1', st_add_star:'⭐️+1', st_tap_hint:'노드를 탭하여 기록',
+    st_belt_locked:'미습득', st_reps:'회', st_no_flowchart:'먼저 플로우차트를 만들어주세요',
     share_items:'표시할 항목', share_f_date:'날짜', share_f_type:'종류', share_f_time:'시간', share_f_duration:'훈련 시간',
     share_f_tech:'기술', share_f_partner:'상대 · 체육관', share_f_goal:'목표', share_f_notes:'메모', share_f_rating:'컨디션',
     share_belt:'벨트 색상', share_week:'이번 주 기록 공유', share_week_label:'THIS WEEK', share_days:'DAYS', share_avg:'AVG',
@@ -778,13 +797,13 @@ function saveFlowcharts() {
 load();
 
 // ── ナビ ──
-const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','stats','search','import'];
+const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','skilltree','stats','search','import'];
 function showView(v) {
   ALL_VIEWS.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x!==v));
   const nav = document.getElementById('main-nav');
   const fab = document.getElementById('fab');
   if (v==='form') { nav.classList.add('hidden'); fab.classList.add('hidden'); }
-  else if (v==='stats' || v==='search' || v==='import') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
+  else if (v==='stats' || v==='search' || v==='import' || v==='skilltree') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
   else { nav.classList.remove('hidden'); fab.classList.remove('hidden'); }
   ['dashboard','list','library','videos','flowchart','stats'].forEach(x => {
     const btn = document.getElementById('nav-'+x);
@@ -810,6 +829,7 @@ function render() {
   if(currentView==='videos')      renderVideos();
   if(currentView==='flowchart')   renderFlowchartList();
   if(currentView==='flowchart-detail') renderFlowchartDetail();
+  if(currentView==='skilltree') renderSkillTree();
   if(currentView==='stats') renderStats();
   if(currentView==='search') renderSearch();
   if(currentView==='import') renderImport();
@@ -1447,7 +1467,28 @@ function savePost(){
 function newFlowchart(){
   return { id:Date.now(), title:'', startPosition:'', nodes:[], createdAt:new Date().toISOString() };
 }
-function newNode(actor){ return { id:Date.now()+Math.floor(Math.random()*1000), actor:actor||'me', move:'', notes:'', children:[] }; }
+function newNode(actor){ return { id:Date.now()+Math.floor(Math.random()*1000), actor:actor||'me', move:'', notes:'', children:[], drills:0, stars:0 }; }
+
+// ── 帯システム（スキルツリー用） ──
+// ドリル回数 → 帯
+const BELT_TIERS = [
+  { min:0,   id:'locked', color:'#d0ccc4', edge:'#bbb5aa', label:'—' },
+  { min:10,  id:'white',  color:'#f2efe9', edge:'#c9c3b8', label:'White' },
+  { min:20,  id:'blue',   color:'#2f5d9e', edge:'#244a7e', label:'Blue' },
+  { min:40,  id:'purple', color:'#6b4c9a', edge:'#563d7d', label:'Purple' },
+  { min:60,  id:'brown',  color:'#7a5230', edge:'#5f3f24', label:'Brown' },
+  { min:80,  id:'black',  color:'#1a1a1a', edge:'#000', label:'Black' },
+  { min:100, id:'coral',  color:'#c0392b', edge:'#96261a', label:'Coral' },
+];
+function beltForDrills(drills){
+  let tier = BELT_TIERS[0];
+  for(const b of BELT_TIERS){ if(drills >= b.min) tier = b; }
+  return tier;
+}
+function nextBeltThreshold(drills){
+  for(const b of BELT_TIERS){ if(drills < b.min) return b.min; }
+  return null; // max
+}
 
 function startNewFlowchart(){
   const fc=newFlowchart();
@@ -1511,9 +1552,10 @@ let fcEditMode = false;
 function renderFlowchartDetail(){
   const fc=getFlowchart();
   if(!fc){ showView('flowchart'); return; }
-  let html=`<div class="flex-row" style="margin-bottom:16px">
+  let html=`<div class="flex-row" style="margin-bottom:16px;flex-wrap:wrap;gap:6px">
     <button class="btn-secondary" onclick="showView('flowchart')">← ${t('back_list')}</button>
     <button class="btn-secondary ${fcEditMode?'accent':''}" onclick="toggleFcEdit()">${fcEditMode?t('fc_done'):t('fc_edit')}</button>
+    ${!fcEditMode?`<button class="btn-secondary" style="color:#b07d3a;border-color:#b07d3a33" onclick="openSkillTree(${fc.id})">🥋 ${t('skilltree')}</button>`:''}
     <button class="btn-danger" onclick="deleteFlowchart(${fc.id})">${t('delete')}</button>
   </div>`;
 
@@ -3356,6 +3398,287 @@ function drawFooter(x, W, H){
   x.fillStyle = '#c4bdb2';
   x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
   drawTracked(x, 'BJJ LOG', padL, fy, isStory?7:6);
+}
+
+
+
+// ── SKILL TREE（スキルツリー） ──
+let skillTreeId = null;
+let stZoom = { scale:1, tx:20, ty:20 };
+
+function openSkillTree(fcId){
+  skillTreeId = fcId;
+  showView('skilltree');
+}
+function getSkillTreeFc(){ return flowcharts.find(f=>f.id===skillTreeId); }
+
+// ノードを技名で練習記録と照合し、自動ドリル数を返す
+function autoDrillCount(moveName){
+  if(!moveName) return 0;
+  const nm = moveName.trim().toLowerCase();
+  let count = 0;
+  sessions.forEach(s=>{
+    (s.techniques||[]).forEach(tk=>{
+      if(tk.name && tk.name.trim().toLowerCase()===nm) count++;
+    });
+  });
+  return count;
+}
+// 合計ドリル = 手動ドリル + 自動カウント
+function totalDrills(node){
+  return (node.drills||0) + autoDrillCount(node.move);
+}
+
+function renderSkillTree(){
+  const fc = getSkillTreeFc();
+  if(!fc){ showView('flowchart'); return; }
+
+  let html = `<div class="flex-row" style="margin-bottom:14px">
+    <button class="btn-secondary" onclick="openFlowchart(${fc.id})">← ${t('back_list')}</button>
+  </div>`;
+  html += `<div style="font-size:20px;font-weight:700;margin-bottom:4px">🥋 ${esc(fc.title||t('untitled'))}</div>`;
+  html += `<div style="font-size:12px;color:#aaa;margin-bottom:14px;line-height:1.5">${t('skilltree_hint')}</div>`;
+
+  // 帯の凡例
+  html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">`;
+  BELT_TIERS.filter(b=>b.id!=='locked').forEach(b=>{
+    html += `<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#888">
+      <div style="width:14px;height:8px;border-radius:2px;background:${b.color};border:1px solid ${b.edge}"></div>${b.min}
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += renderSkillTreeGraph(fc);
+  document.getElementById('view-skilltree').innerHTML = html;
+  setTimeout(setupSkillTreeZoom, 50);
+}
+
+function renderSkillTreeGraph(fc){
+  const NODE_W=128, NODE_H=76, H_GAP=22, V_GAP=52;
+  const root = { id:'__root__', actor:'pos', move:fc.startPosition||t('start'), children:fc.nodes };
+
+  function calcWidth(node){
+    if(!node.children || !node.children.length){ node._w=NODE_W; return NODE_W; }
+    let total=0;
+    node.children.forEach(c=>{ total+=calcWidth(c); });
+    total += (node.children.length-1)*H_GAP;
+    node._w = Math.max(NODE_W, total);
+    return node._w;
+  }
+  calcWidth(root);
+
+  const positioned=[];
+  function assign(node, xLeft, depth){
+    const y = depth*(NODE_H+V_GAP);
+    const cx = xLeft + node._w/2;
+    node._x = cx - NODE_W/2;
+    node._y = y;
+    positioned.push(node);
+    if(node.children && node.children.length){
+      let childrenTotal=0;
+      node.children.forEach(c=>{ childrenTotal+=c._w; });
+      childrenTotal += (node.children.length-1)*H_GAP;
+      let childX = cx - childrenTotal/2;
+      node.children.forEach(c=>{ assign(c, childX, depth+1); childX += c._w + H_GAP; });
+    }
+  }
+  assign(root, 0, 0);
+
+  let maxX=0, maxY=0;
+  positioned.forEach(n=>{ maxX=Math.max(maxX,n._x+NODE_W); maxY=Math.max(maxY,n._y+NODE_H); });
+  const totalW=maxX+30, totalH=maxY+30;
+
+  // 線（帯の色で光らせる）
+  let lines='';
+  positioned.forEach(n=>{
+    if(n.children){
+      n.children.forEach(c=>{
+        const x1=n._x+NODE_W/2, y1=n._y+NODE_H;
+        const x2=c._x+NODE_W/2, y2=c._y;
+        const midY=(y1+y2)/2;
+        const belt = c.id==='__root__' ? BELT_TIERS[1] : beltForDrills(totalDrills(c));
+        const lit = totalDrills(c) >= 10;
+        const col = lit ? belt.color : '#3a352c';
+        lines += `<path d="M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}" stroke="${col}" stroke-width="${lit?3:2}" fill="none" opacity="${lit?0.9:0.4}"/>`;
+      });
+    }
+  });
+
+  // ノード
+  let nodesHtml='';
+  positioned.forEach(n=>{
+    const isRoot = n.id==='__root__';
+    const drills = isRoot ? 999 : totalDrills(n);
+    const belt = beltForDrills(drills);
+    const locked = !isRoot && drills < 10;
+    const stars = n.stars||0;
+
+    let bg, border, textCol;
+    if(isRoot){
+      bg='#1a1a1a'; border='#b07d3a'; textCol='#fff';
+    } else if(locked){
+      bg='#241f18'; border='#3a352c'; textCol='#6b6459';
+    } else {
+      // 帯色を背景にうっすら、枠を帯色で
+      bg='#211c15'; border=belt.color; textCol='#f0ece4';
+    }
+
+    // グロー効果（点灯時）
+    const glow = (!isRoot && !locked) ? `box-shadow:0 0 16px ${belt.color}55, inset 0 0 0 1px ${belt.color}` : (isRoot?`box-shadow:0 0 20px #b07d3a66`:'');
+
+    // 星表示
+    let starHtml='';
+    if(stars>0){
+      starHtml = `<div style="font-size:10px;color:#e8c04a;margin-top:1px">${'⭐️'.repeat(Math.min(stars,5))}${stars>5?'×'+stars:''}</div>`;
+    }
+
+    // 帯バンド（点灯時、実際の帯の見た目）
+    let bandHtml='';
+    if(!isRoot && !locked){
+      const isCoral = belt.id==='coral';
+      const isWhite = belt.id==='white';
+      bandHtml = `<div class="st-belt-band" style="background:${isCoral?'linear-gradient(90deg,#c0392b 50%,#f2efe9 50%)':belt.color};border:1px solid ${belt.edge}">
+        ${(belt.id==='black'||isCoral)?'<div style=\"position:absolute;right:3px;top:0;bottom:0;width:4px;background:#c0392b\"></div>':''}
+      </div>`;
+    } else if(!isRoot) {
+      bandHtml = `<div class="st-belt-band" style="background:#3a352c"></div>`;
+    }
+
+    if(isRoot){
+      nodesHtml += `<div class="st-node" style="left:${n._x}px;top:${n._y}px;width:${NODE_W}px;height:${NODE_H}px;background:${bg};border:2px solid ${border};${glow}">
+        <div style="font-size:22px">🥋</div>
+        <div style="font-weight:700;font-size:11px;color:${textCol};text-align:center;padding:0 6px;line-height:1.2">${esc(n.move||'—')}</div>
+      </div>`;
+    } else {
+      nodesHtml += `<div class="st-node" style="left:${n._x}px;top:${n._y}px;width:${NODE_W}px;height:${NODE_H}px;background:${bg};border:2px solid ${border};${glow}" onclick="openNodeLog(${n.id})">
+        <div style="font-weight:700;font-size:12px;color:${textCol};text-align:center;padding:0 6px;line-height:1.2">${locked?'🔒 ':''}${esc(n.move||'—')}</div>
+        <div style="font-size:9px;color:#8a8378;margin-top:2px">${drills} ${t('st_reps')}</div>
+        ${starHtml}
+        <div style="width:70%">${bandHtml}</div>
+      </div>`;
+    }
+  });
+
+  return `<div class="st-canvas-wrap" id="st-canvas">
+    <div class="st-canvas-inner" id="st-canvas-inner" style="width:${totalW}px;height:${totalH}px">
+      <svg style="position:absolute;top:0;left:0;width:${totalW}px;height:${totalH}px;pointer-events:none">${lines}</svg>
+      ${nodesHtml}
+    </div>
+  </div>
+  <div style="font-size:12px;color:#aaa;text-align:center">${t('st_tap_hint')} · ${t('pinch_hint')}</div>`;
+}
+
+// ノードをタップ → ドリル/スター記録モーダル
+function openNodeLog(nodeId){
+  const fc = getSkillTreeFc();
+  if(!fc) return;
+  const node = findNode(fc.nodes, nodeId);
+  if(!node) return;
+
+  const auto = autoDrillCount(node.move);
+  const drills = totalDrills(node);
+  const belt = beltForDrills(drills);
+  const next = nextBeltThreshold(drills);
+  const locked = drills < 10;
+
+  const beltName = locked ? t('st_belt_locked') : belt.label;
+  const beltSwatch = locked
+    ? `<div style="width:60px;height:16px;border-radius:3px;background:#d0ccc4;border:1px solid #bbb5aa"></div>`
+    : `<div style="width:60px;height:16px;border-radius:3px;background:${belt.id==='coral'?'linear-gradient(90deg,#c0392b 50%,#f2efe9 50%)':belt.color};border:1px solid ${belt.edge}"></div>`;
+
+  document.getElementById('modal-box').innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">${esc(node.move||'—')}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0">
+        ${beltSwatch}
+        <span style="font-size:14px;font-weight:600">${beltName}</span>
+      </div>
+      <div style="font-size:13px;color:#666;margin-bottom:2px">${t('st_drills')}: <b>${drills}</b> ${t('st_reps')}${auto>0?` <span style="color:#aaa;font-size:11px">(${auto} auto)</span>`:''}</div>
+      ${next!==null
+        ? `<div style="font-size:12px;color:#b07d3a;margin-bottom:16px">${t('st_to_next')}: ${next-drills} ${t('st_reps')}</div>`
+        : `<div style="font-size:12px;color:#c0392b;font-weight:600;margin-bottom:16px">${t('st_maxed')}</div>`}
+
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn-primary" style="flex:1" onclick="addNodeDrill(${nodeId},1)">${t('st_add_drill')}</button>
+        <button class="btn-secondary" style="flex:1" onclick="addNodeDrill(${nodeId},5)">+5</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <button class="btn-secondary" style="flex:1" onclick="addNodeDrill(${nodeId},-1)">−1</button>
+        <button class="btn-secondary" style="flex:1;background:#e8c04a22;border-color:#e8c04a66;color:#a8842a" onclick="addNodeStar(${nodeId},1)">${t('st_add_star')}</button>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:14px">${t('st_stars')}: ${'⭐️'.repeat(Math.min(node.stars||0,5))}${(node.stars||0)>5?' ×'+(node.stars||0):''} ${(node.stars||0)===0?'—':''}
+        ${(node.stars||0)>0?`<button onclick="addNodeStar(${nodeId},-1)" style="background:none;border:none;color:#c0392b;font-size:12px;cursor:pointer;margin-left:6px">−</button>`:''}
+      </div>
+      <button class="btn-secondary" style="width:100%" onclick="closeModal()">${t('cancel')}</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+
+function addNodeDrill(nodeId, delta){
+  const fc = getSkillTreeFc();
+  const node = findNode(fc.nodes, nodeId);
+  if(!node) return;
+  node.drills = Math.max(0, (node.drills||0) + delta);
+  saveFlowcharts();
+  openNodeLog(nodeId);
+  renderSkillTree();
+}
+function addNodeStar(nodeId, delta){
+  const fc = getSkillTreeFc();
+  const node = findNode(fc.nodes, nodeId);
+  if(!node) return;
+  node.stars = Math.max(0, (node.stars||0) + delta);
+  saveFlowcharts();
+  openNodeLog(nodeId);
+  renderSkillTree();
+}
+
+// ピンチズーム＆パン
+function setupSkillTreeZoom(){
+  const canvas=document.getElementById('st-canvas');
+  const inner=document.getElementById('st-canvas-inner');
+  if(!canvas || !inner) return;
+  const cw=canvas.clientWidth, ch=canvas.clientHeight;
+  const iw=inner.offsetWidth, ih=inner.offsetHeight;
+  const fitScale=Math.min(cw/(iw+40), ch/(ih+40), 1);
+  stZoom={ scale:fitScale, tx:(cw-iw*fitScale)/2, ty:20 };
+  applyStZoom();
+
+  let startDist=0, startScale=1, startX=0, startY=0, startTx=0, startTy=0, mode=null, midStart={x:0,y:0};
+  function dist(a,b){ return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); }
+  canvas.ontouchstart=(e)=>{
+    if(e.touches.length===2){
+      mode='pinch'; startDist=dist(e.touches[0],e.touches[1]); startScale=stZoom.scale;
+      const r=canvas.getBoundingClientRect();
+      midStart={ x:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left, y:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top };
+      startTx=stZoom.tx; startTy=stZoom.ty;
+    } else if(e.touches.length===1){
+      mode='pan'; startX=e.touches[0].clientX; startY=e.touches[0].clientY; startTx=stZoom.tx; startTy=stZoom.ty;
+    }
+  };
+  canvas.ontouchmove=(e)=>{
+    e.preventDefault();
+    if(mode==='pinch' && e.touches.length===2){
+      const d=dist(e.touches[0],e.touches[1]);
+      let ns=Math.max(0.2,Math.min(3,startScale*(d/startDist)));
+      const ratio=ns/startScale;
+      stZoom.tx=midStart.x-(midStart.x-startTx)*ratio;
+      stZoom.ty=midStart.y-(midStart.y-startTy)*ratio;
+      stZoom.scale=ns; applyStZoom();
+    } else if(mode==='pan' && e.touches.length===1){
+      stZoom.tx=startTx+(e.touches[0].clientX-startX);
+      stZoom.ty=startTy+(e.touches[0].clientY-startY);
+      applyStZoom();
+    }
+  };
+  canvas.ontouchend=(e)=>{
+    if(e.touches.length===0) mode=null;
+    else if(e.touches.length===1){ mode='pan'; startX=e.touches[0].clientX; startY=e.touches[0].clientY; startTx=stZoom.tx; startTy=stZoom.ty; }
+  };
+}
+function applyStZoom(){
+  const inner=document.getElementById('st-canvas-inner');
+  if(inner) inner.style.transform=`translate(${stZoom.tx}px,${stZoom.ty}px) scale(${stZoom.scale})`;
 }
 
 
