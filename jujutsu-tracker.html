@@ -2940,38 +2940,145 @@ function renderShareCanvas(){
   const x = c.getContext('2d');
   const belt = getBelt();
 
-  // 背景：生成りの紙
-  x.fillStyle = '#faf7f2';
-  x.fillRect(0,0,W,H);
-
-  // マットの目地
-  x.strokeStyle = 'rgba(26,26,26,0.028)';
-  x.lineWidth = 1;
-  const grid = 54;
-  for(let gx=0; gx<W; gx+=grid){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,H); x.stroke(); }
-  for(let gy=0; gy<H; gy+=grid){ x.beginPath(); x.moveTo(0,gy); x.lineTo(W,gy); x.stroke(); }
-
-  // 署名要素：左端の帯（選択色 + 黒バー）
-  const beltW = shareFormat==='story' ? 30 : 24;
-  x.fillStyle = belt.main;
-  x.fillRect(0,0,beltW,H);
-  // 白帯など明るい色は境界線を入れる
-  if(belt.id==='white'){
-    x.strokeStyle = 'rgba(26,26,26,0.12)';
-    x.lineWidth = 2;
-    x.beginPath(); x.moveTo(beltW,0); x.lineTo(beltW,H); x.stroke();
-  }
-  // 帯のバー（黒帯の赤バーなど）
-  const barTop = shareFormat==='story' ? H*0.60 : H*0.58;
-  const barH = shareFormat==='story' ? 240 : 165;
-  x.fillStyle = belt.bar;
-  x.fillRect(0, barTop, beltW, barH);
+  drawRichBackground(x, W, H, belt);
 
   if(shareMode==='session')      drawSessionCard(x, W, H, belt);
   else if(shareMode==='week')    drawWeekCard(x, W, H, belt);
   else                           drawStatsCard(x, W, H, belt);
 
+  drawLogoMark(x, W, H);
+
   return c;
+}
+
+// 和紙風の背景 + 漢字 + フィルムストリップ
+function drawRichBackground(x, W, H, belt){
+  const isStory = shareFormat==='story';
+
+  // ベースの生成り
+  x.fillStyle = '#f4f1ea';
+  x.fillRect(0,0,W,H);
+
+  // 紙の繊維テクスチャ（ランダムな微小ドット）— 疑似乱数で固定
+  let seed = 12345;
+  const rnd = ()=>{ seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed/0x7fffffff; };
+  x.save();
+  for(let i=0;i<2600;i++){
+    const px = rnd()*W, py = rnd()*H;
+    const a = rnd()*0.04;
+    const shade = rnd()>0.5 ? '0,0,0' : '255,255,255';
+    x.fillStyle = `rgba(${shade},${a})`;
+    x.fillRect(px, py, rnd()*2.2+0.5, rnd()*2.2+0.5);
+  }
+  x.restore();
+
+  // ごく薄い縦の紙ムラ
+  x.save();
+  for(let gx=0; gx<W; gx+=3){
+    if(rnd()>0.85){
+      x.fillStyle = `rgba(0,0,0,${rnd()*0.012})`;
+      x.fillRect(gx,0,1.5,H);
+    }
+  }
+  x.restore();
+
+  // 背景の漢字「柔」「術」（薄いグレー、右側に大きく）
+  x.save();
+  x.fillStyle = 'rgba(40,36,30,0.055)';
+  const kanjiSize = isStory ? 560 : 440;
+  x.font = `700 ${kanjiSize}px "Hiragino Mincho ProN", "Yu Mincho", serif`;
+  x.textAlign = 'center';
+  if(isStory){
+    x.fillText('柔', W*0.72, H*0.40);
+    x.fillText('術', W*0.72, H*0.40 + kanjiSize*0.92);
+  } else {
+    x.fillText('柔', W*0.80, H*0.52);
+  }
+  x.textAlign = 'left';
+  x.restore();
+
+  // 左端のフィルムストリップ（帯色）
+  const stripW = isStory ? 92 : 74;
+  x.fillStyle = belt.main;
+  x.fillRect(0,0,stripW,H);
+  if(belt.id==='white' || belt.id==='coral'){
+    x.strokeStyle = 'rgba(26,26,26,0.14)';
+    x.lineWidth = 2;
+    x.beginPath(); x.moveTo(stripW,0); x.lineTo(stripW,H); x.stroke();
+  }
+
+  // ストリップ上に区間ラベル（縦書き）＋パンチ穴
+  const segments = ['WARM UP','TECHNIQUE','SPARRING','COOL DOWN'];
+  const segH = H / segments.length;
+  const stripText = (belt.id==='white'||belt.id==='coral') ? '#8a8378' : 'rgba(255,255,255,0.72)';
+  const stripTextActive = (belt.id==='white'||belt.id==='coral') ? '#1a1a1a' : '#fff';
+  const holeColor = '#f4f1ea';
+  segments.forEach((seg,i)=>{
+    const cy = segH*i + segH/2;
+    // パンチ穴（フィルム風）
+    x.fillStyle = holeColor;
+    const holeY = segH*i + segH*0.5;
+    x.beginPath();
+    x.arc(stripW*0.5, segH*i + 40, isStory?7:6, 0, Math.PI*2);
+    x.fill();
+    // 縦書きラベル
+    x.save();
+    x.translate(stripW*0.5, cy);
+    x.rotate(-Math.PI/2);
+    x.fillStyle = (i===1) ? stripTextActive : stripText; // TECHNIQUE を強調
+    x.font = `700 ${isStory?20:16}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.textAlign = 'center';
+    // トラッキングを空けて描画
+    let tw = 0;
+    const tracking = isStory?4:3;
+    for(const ch of seg) tw += x.measureText(ch).width + tracking;
+    let cx = -tw/2;
+    for(const ch of seg){ x.fillText(ch, cx + x.measureText(ch).width/2, 0); cx += x.measureText(ch).width + tracking; }
+    x.textAlign = 'left';
+    x.restore();
+  });
+
+  // ストリップ下部に帯バー（黒帯の赤バーなど）— セグメントと重ならない位置
+  const barTop = isStory ? H*0.46 : H*0.44;
+  x.fillStyle = belt.bar;
+  x.fillRect(0, barTop, stripW, isStory?170:120);
+}
+
+// フッターのロゴマーク（三角シンボル + LOGGED WITH）
+function drawLogoMark(x, W, H){
+  const isStory = shareFormat==='story';
+  const rightX = W - (isStory?70:56);
+  const fy = H - (isStory?90:64);
+
+  // 右下：三角シンボル
+  x.save();
+  x.strokeStyle = '#2f5d9e';
+  x.fillStyle = '#2f5d9e';
+  x.lineWidth = isStory?4:3;
+  const r = isStory?26:20;
+  const cx = rightX - r;
+  const cy = fy - r*0.4;
+  // 丸枠
+  x.beginPath(); x.arc(cx, cy, r, 0, Math.PI*2); x.stroke();
+  // 中の三角
+  x.beginPath();
+  x.moveTo(cx, cy - r*0.5);
+  x.lineTo(cx + r*0.45, cy + r*0.35);
+  x.lineTo(cx - r*0.45, cy + r*0.35);
+  x.closePath(); x.fill();
+  x.restore();
+
+  // LOGGED WITH BJJ LOG APP（シンボルの左）
+  x.save();
+  x.textAlign = 'right';
+  x.fillStyle = '#b0a89c';
+  x.font = `600 ${isStory?18:15}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText('LOGGED WITH', cx - r - (isStory?16:12), fy - (isStory?18:14));
+  x.fillStyle = '#2f5d9e';
+  x.font = `700 ${isStory?20:16}px -apple-system, "Helvetica Neue", sans-serif`;
+  x.fillText('BJJ LOG APP', cx - r - (isStory?16:12), fy + (isStory?8:6));
+  x.textAlign = 'left';
+  x.restore();
 }
 
 function fitText(x, text, maxW, startSize, font, minSize){
@@ -2989,7 +3096,7 @@ function drawSessionCard(x, W, H, belt){
   const s = sessions.find(v=>v.id===shareSessionId);
   if(!s) return;
   const isStory = shareFormat==='story';
-  const padL = isStory ? 108 : 88;
+  const padL = isStory ? 150 : 120;
   const padR = W - (isStory ? 84 : 70);
   const contentW = padR - padL;
   let y = isStory ? 210 : 140;
@@ -3144,17 +3251,46 @@ function drawSessionCard(x, W, H, belt){
     x.fillStyle = '#a8a29a';
     x.font = `700 ${isStory?24:20}px -apple-system, "Helvetica Neue", sans-serif`;
     drawTracked(x, 'CONDITION', padL, y, isStory?6:5);
-    y += isStory ? 48 : 38;
-    // 5段階のドット表示
-    const dotR = isStory ? 13 : 10;
-    const gap = isStory ? 44 : 34;
-    for(let i=0;i<5;i++){
-      const cx = padL + dotR + i*gap;
-      const cy = y - dotR;
-      x.fillStyle = i < s.rating ? belt.text : '#e0d9cf';
-      x.fillRect(cx - dotR, cy - dotR/2, dotR*2, dotR*2);
-    }
     y += isStory ? 40 : 32;
+
+    // 円形ゲージ
+    const pct = Math.round((s.rating/5)*100);
+    const gR = isStory ? 62 : 48;
+    const gaugeCx = padL + gR;
+    const gaugeCy = y + gR;
+    const lw = isStory ? 14 : 11;
+    // 背景リング
+    x.beginPath();
+    x.arc(gaugeCx, gaugeCy, gR, 0, Math.PI*2);
+    x.strokeStyle = '#e3ddd2';
+    x.lineWidth = lw;
+    x.stroke();
+    // 進捗リング（帯色）
+    x.beginPath();
+    x.arc(gaugeCx, gaugeCy, gR, -Math.PI/2, -Math.PI/2 + (pct/100)*Math.PI*2);
+    x.strokeStyle = belt.text;
+    x.lineWidth = lw;
+    x.lineCap = 'round';
+    x.stroke();
+    x.lineCap = 'butt';
+    // 中央のパーセント
+    x.fillStyle = '#1a1a1a';
+    x.font = `800 ${isStory?38:30}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.textAlign = 'center';
+    x.fillText(String(pct), gaugeCx, gaugeCy + (isStory?8:6));
+    x.font = `600 ${isStory?16:13}px -apple-system, "Helvetica Neue", sans-serif`;
+    x.fillStyle = '#a8a29a';
+    x.fillText('%', gaugeCx + (isStory?38:30), gaugeCy + (isStory?8:6));
+    x.textAlign = 'left';
+
+    // 右側に評価ラベル
+    const ratingWords = ['','TOUGH','OK','SOLID','GREAT','PERFECT'];
+    const label = ratingWords[s.rating] || '';
+    x.fillStyle = belt.text;
+    x.font = `800 ${isStory?34:27}px "Helvetica Neue", -apple-system, sans-serif`;
+    x.fillText(label, gaugeCx + gR + (isStory?34:26), gaugeCy - (isStory?6:4));
+
+    y += isStory ? gR*2 + 30 : gR*2 + 22;
   }
 
   drawFooter(x, W, H);
@@ -3193,7 +3329,7 @@ function drawWrapped(x, text, px, py, maxW, fontSize, lineH, maxLines){
 // ── 週間：スケジュール型 ──
 function drawWeekCard(x, W, H, belt){
   const isStory = shareFormat==='story';
-  const padL = isStory ? 108 : 88;
+  const padL = isStory ? 150 : 120;
   const padR = W - (isStory ? 84 : 70);
   const contentW = padR - padL;
   let y = isStory ? 210 : 140;
@@ -3321,7 +3457,7 @@ function drawWeekCard(x, W, H, belt){
 
 function drawStatsCard(x, W, H, belt){
   const isStory = shareFormat==='story';
-  const padL = isStory ? 108 : 88;
+  const padL = isStory ? 150 : 120;
   const padR = W - (isStory ? 84 : 70);
   const contentW = padR - padL;
   let y = isStory ? 210 : 140;
@@ -3433,12 +3569,7 @@ function drawTracked(x, text, px, py, tracking){
 }
 
 function drawFooter(x, W, H){
-  const isStory = shareFormat==='story';
-  const padL = isStory ? 108 : 88;
-  const fy = H - (isStory ? 110 : 74);
-  x.fillStyle = '#c4bdb2';
-  x.font = `700 ${isStory?26:21}px -apple-system, "Helvetica Neue", sans-serif`;
-  drawTracked(x, 'BJJ LOG', padL, fy, isStory?7:6);
+  // ロゴは drawLogoMark で描画するため、ここでは何もしない
 }
 
 
