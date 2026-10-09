@@ -46,6 +46,28 @@
     .btn-light { background: #f0e8da; color: #b07d3a; border: none; border-radius: 6px; padding: 12px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
     .btn-danger { background: none; color: #c0504a; border: 1px solid #c0504a33; border-radius: 6px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
     .btn-sm { padding: 7px 14px; font-size: 12px; }
+    .goal-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .goal-card { background: #fff; border: 1px solid #e8e8e8; border-left: 3px solid #b07d3a; border-radius: 8px; padding: 13px 15px; cursor: pointer; }
+    .goal-card:active { background: #faf6ef; }
+    .goal-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+    .goal-card-type { font-size: 12px; font-weight: 700; color: #b07d3a; }
+    .goal-card-range { font-size: 11px; color: #aaa; }
+    .goal-card-text { font-size: 14px; color: #1a1a1a; line-height: 1.5; white-space: pre-wrap; }
+    .goal-card-cta { font-size: 11px; color: #b07d3a; margin-top: 8px; text-align: right; }
+    .review-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .period-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; }
+    .pn-btn { background: none; border: none; font-size: 19px; cursor: pointer; color: #b07d3a; padding: 2px 14px; }
+    .pn-label { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .goal-label-lg { display: block; font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px; }
+    .goal-textarea { width: 100%; box-sizing: border-box; min-height: 56px; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; font-size: 14px; font-family: inherit; resize: none; margin-bottom: 10px; line-height: 1.5; }
+    .goal-textarea:focus { outline: none; border-color: #b07d3a; }
+    .memo-card { cursor: pointer; margin-bottom: 10px; }
+    .memo-card:active { background: #faf6ef; }
+    .memo-card-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #999; margin-bottom: 8px; }
+    .memo-card-type { color: #b07d3a; font-weight: 600; }
+    .memo-card-body { font-size: 13px; color: #333; line-height: 1.55; }
+    .achieve-btn { width: 100%; padding: 12px; border: 1.5px dashed #c8c8c8; background: #fafafa; color: #888; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .achieve-btn.on { border: 1.5px solid #3a9d5a; background: #eef8f0; color: #3a9d5a; }
     #fab { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 24px; width: 52px; height: 52px; border-radius: 26px; background: #b07d3a; color: #fff; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 20px rgba(176,125,58,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; line-height: 1; }
     .phase-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
     .phase-tab { flex: 1; padding: 10px 0; background: #fff; color: #999; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; cursor: pointer; }
@@ -171,6 +193,8 @@
 <div id="view-skilltree-list" class="page hidden"></div>
 <div id="view-skilltree" class="page hidden"></div>
 <div id="view-stats" class="page hidden"></div>
+<div id="view-weekly-review" class="page hidden"></div>
+<div id="view-monthly-review" class="page hidden"></div>
 <div id="view-search" class="page hidden"></div>
 <div id="view-import" class="page hidden"></div>
 <button id="fab" onclick="onFab()">＋</button>
@@ -276,6 +300,12 @@ const I18N = {
     import_analyze:'解析する', import_confirm:'取り込む', import_found:'件の記録が見つかりました',
     import_no_date:'日付が見つかりません', import_set_date:'日付を選択', import_preview:'プレビュー',
     import_empty:'テキストを貼り付けてください', import_done:'件の記録を取り込みました', import_back:'戻る',
+    back:'戻る', weekly_goal:'週間目標', monthly_goal:'月間目標', weekly_review:'週間振り返り', monthly_review:'月間振り返り',
+    goal_not_set:'目標が未設定です', weekly_goal_ph:'今週の目標を入力…', monthly_goal_ph:'今月の目標を入力…',
+    weekly_memos:'今週の練習メモ', weekly_no_memos:'この週の練習記録はまだありません', no_memo:'メモなし',
+    weekly_summary:'今週の総括', weekly_summary_ph:'今週を振り返って。良かった点・課題・来週に向けて…',
+    monthly_check:'目標の達成チェック', mark_achieved:'達成としてマーク', achieved:'達成', monthly_review_ph:'今月を振り返って。目標は達成できた？何が良かった？…',
+    year_suffix:'年', month_suffix:'月',
     import_split_hint:'空行で区切ると複数の記録として取り込めます', import_content_label:'内容',
     search_title:'検索', search_placeholder:'技名・メモ・目標などで検索', search_no_result:'該当する結果がありません', search_hint:'キーワードを入力してください',
     search_records:'練習記録', search_techniques:'技', search_videos:'動画メモ', search_flowcharts:'フローチャート', search_results:'件の結果',
@@ -381,6 +411,12 @@ const I18N = {
     import_analyze:'Analyze', import_confirm:'Import', import_found:'records found',
     import_no_date:'No date found', import_set_date:'Select date', import_preview:'Preview',
     import_empty:'Please paste some text', import_done:'records imported', import_back:'Back',
+    back:'Back', weekly_goal:'Weekly goal', monthly_goal:'Monthly goal', weekly_review:'Weekly review', monthly_review:'Monthly review',
+    goal_not_set:'No goal set yet', weekly_goal_ph:'Enter this week\'s goal…', monthly_goal_ph:'Enter this month\'s goal…',
+    weekly_memos:'This week\'s notes', weekly_no_memos:'No sessions recorded this week yet', no_memo:'No notes',
+    weekly_summary:'Weekly summary', weekly_summary_ph:'Reflect on your week. Wins, challenges, next week…',
+    monthly_check:'Goal achievement check', mark_achieved:'Mark as achieved', achieved:'Achieved', monthly_review_ph:'Reflect on your month. Did you hit your goal? What went well?…',
+    year_suffix:'', month_suffix:'',
     import_split_hint:'Separate records with a blank line', import_content_label:'Content',
     search_title:'Search', search_placeholder:'Search by technique, notes, goals...', search_no_result:'No matching results', search_hint:'Enter a keyword',
     search_records:'Records', search_techniques:'Techniques', search_videos:'Video memos', search_flowcharts:'Flowcharts', search_results:'results',
@@ -486,6 +522,12 @@ const I18N = {
     import_analyze:'Analisar', import_confirm:'Importar', import_found:'registros encontrados',
     import_no_date:'Data não encontrada', import_set_date:'Selecionar data', import_preview:'Prévia',
     import_empty:'Cole algum texto', import_done:'registros importados', import_back:'Voltar',
+    back:'Voltar', weekly_goal:'Meta semanal', monthly_goal:'Meta mensal', weekly_review:'Revisão semanal', monthly_review:'Revisão mensal',
+    goal_not_set:'Nenhuma meta definida', weekly_goal_ph:'Digite a meta desta semana…', monthly_goal_ph:'Digite a meta deste mês…',
+    weekly_memos:'Notas da semana', weekly_no_memos:'Nenhum treino registrado nesta semana', no_memo:'Sem notas',
+    weekly_summary:'Resumo da semana', weekly_summary_ph:'Reflita sobre a semana. Acertos, desafios, próxima semana…',
+    monthly_check:'Verificação da meta', mark_achieved:'Marcar como alcançada', achieved:'Alcançada', monthly_review_ph:'Reflita sobre o mês. Atingiu a meta? O que foi bom?…',
+    year_suffix:'', month_suffix:'',
     import_split_hint:'Separe os registros com uma linha em branco', import_content_label:'Conteúdo',
     search_title:'Buscar', search_placeholder:'Buscar por técnica, notas, metas...', search_no_result:'Nenhum resultado encontrado', search_hint:'Digite uma palavra-chave',
     search_records:'Registros', search_techniques:'Técnicas', search_videos:'Vídeos', search_flowcharts:'Fluxogramas', search_results:'resultados',
@@ -591,6 +633,12 @@ const I18N = {
     import_analyze:'분석하기', import_confirm:'가져오기', import_found:'개의 기록을 찾았습니다',
     import_no_date:'날짜를 찾지 못했습니다', import_set_date:'날짜 선택', import_preview:'미리보기',
     import_empty:'텍스트를 붙여넣어 주세요', import_done:'개의 기록을 가져왔습니다', import_back:'뒤로',
+    back:'뒤로', weekly_goal:'주간 목표', monthly_goal:'월간 목표', weekly_review:'주간 돌아보기', monthly_review:'월간 돌아보기',
+    goal_not_set:'목표가 설정되지 않았습니다', weekly_goal_ph:'이번 주 목표를 입력…', monthly_goal_ph:'이번 달 목표를 입력…',
+    weekly_memos:'이번 주 연습 메모', weekly_no_memos:'이번 주에 기록된 연습이 없습니다', no_memo:'메모 없음',
+    weekly_summary:'이번 주 총평', weekly_summary_ph:'이번 주를 돌아보며. 좋았던 점·과제·다음 주…',
+    monthly_check:'목표 달성 체크', mark_achieved:'달성으로 표시', achieved:'달성', monthly_review_ph:'이번 달을 돌아보며. 목표를 달성했나요? 무엇이 좋았나요?…',
+    year_suffix:'년', month_suffix:'월',
     import_split_hint:'빈 줄로 구분하면 여러 기록으로 가져올 수 있습니다', import_content_label:'내용',
     search_title:'검색', search_placeholder:'기술명·메모·목표 등으로 검색', search_no_result:'해당하는 결과가 없습니다', search_hint:'키워드를 입력해주세요',
     search_records:'훈련 기록', search_techniques:'기술', search_videos:'영상 메모', search_flowcharts:'플로우차트', search_results:'개의 결과',
@@ -687,6 +735,39 @@ function openLangModal(){
 const STORAGE_KEY = 'jujutsu_sessions';
 const VMEMO_KEY   = 'jujutsu_vmemos';
 const FLOWCHART_KEY = 'jujutsu_flowcharts';
+const GOALS_KEY = 'bjj_goals';
+// 目標ストア: { weekly:{ '2026-W41': {goal, summary} }, monthly:{ '2026-10': {goal, review, achieved} } }
+let goals = (()=>{
+  try { return JSON.parse(localStorage.getItem(GOALS_KEY) || '{}'); } catch { return {}; }
+})();
+if(!goals.weekly) goals.weekly={};
+if(!goals.monthly) goals.monthly={};
+function saveGoals(){ try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch{} }
+// ISO週キー（月曜始まり）
+function isoWeekKey(d){
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  const wk = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+  return dt.getUTCFullYear() + '-W' + String(wk).padStart(2,'0');
+}
+function monthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+// 週キーから月曜〜日曜の日付文字列範囲を返す
+function weekRange(wkKey){
+  const [y,wpart] = wkKey.split('-W');
+  const week = parseInt(wpart,10);
+  const jan4 = new Date(Date.UTC(parseInt(y,10),0,4));
+  const jan4day = jan4.getUTCDay() || 7;
+  const mon = new Date(jan4);
+  mon.setUTCDate(jan4.getUTCDate() - (jan4day-1) + (week-1)*7);
+  const sun = new Date(mon); sun.setUTCDate(mon.getUTCDate()+6);
+  const fmt = (dd)=> dd.toISOString().split('T')[0];
+  return { start: fmt(mon), end: fmt(sun) };
+}
+// レビュー画面の現在位置
+let reviewWeekKey = isoWeekKey(new Date());
+let reviewMonthKey = monthKey(new Date());
 function POSITIONS_(){ return t('positions'); }
 function RATING_LABELS_(){ return t('ratings'); }
 // カスタム種別（ユーザーが追加したもの）
@@ -798,13 +879,13 @@ function saveFlowcharts() {
 load();
 
 // ── ナビ ──
-const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','skilltree-list','skilltree','stats','search','import'];
+const ALL_VIEWS = ['dashboard','list','detail','form','library','tech-detail','videos','flowchart','flowchart-detail','skilltree-list','skilltree','stats','weekly-review','monthly-review','search','import'];
 function showView(v) {
   ALL_VIEWS.forEach(x => document.getElementById('view-'+x).classList.toggle('hidden', x!==v));
   const nav = document.getElementById('main-nav');
   const fab = document.getElementById('fab');
   if (v==='form') { nav.classList.add('hidden'); fab.classList.add('hidden'); }
-  else if (v==='stats' || v==='search' || v==='import' || v==='skilltree' || v==='skilltree-list') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
+  else if (v==='stats' || v==='search' || v==='import' || v==='skilltree' || v==='skilltree-list' || v==='weekly-review' || v==='monthly-review') { nav.classList.remove('hidden'); fab.classList.add('hidden'); }
   else { nav.classList.remove('hidden'); fab.classList.remove('hidden'); }
   ['dashboard','list','library','videos','flowchart','skilltree'].forEach(x => {
     const btn = document.getElementById('nav-'+x);
@@ -833,6 +914,8 @@ function render() {
   if(currentView==='skilltree-list') renderSkillTreeList();
   if(currentView==='skilltree') renderSkillTree();
   if(currentView==='stats') renderStats();
+  if(currentView==='weekly-review') renderWeeklyReview();
+  if(currentView==='monthly-review') renderMonthlyReview();
   if(currentView==='search') renderSearch();
   if(currentView==='import') renderImport();
 }
@@ -867,6 +950,9 @@ function renderDashboard() {
     pending.forEach(s=>{ html+=`<div class="pending-row"><div><span style="font-size:13px">${esc(s.date)} ${esc(s.type)}</span>${s.goal?`<div style="font-size:11px;color:#aaa">${t('goal_label')}: ${esc(s.goal)}</div>`:''}</div><button class="btn-primary btn-sm" onclick="startEdit(${s.id},'post')">${t('record_post')}</button></div>`; });
     html+=`</div>`;
   }
+
+  // 週間・月間目標カード（常に表示）
+  html += renderGoalCards();
 
   // カレンダー
   html += renderCalendarHtml(calendarYear, calendarMonth);
@@ -919,6 +1005,175 @@ function renderStatsEmbed(){
   }
   return html;
 }
+
+// ── 週間・月間 目標 & 振り返り ──
+function renderGoalCards(){
+  const now = new Date();
+  const wk = isoWeekKey(now);
+  const mk = monthKey(now);
+  const w = goals.weekly[wk] || {};
+  const m = goals.monthly[mk] || {};
+  const wr = weekRange(wk);
+  const wLabel = `${wr.start.slice(5).replace('-','/')}〜${wr.end.slice(5).replace('-','/')}`;
+  const mLabel = `${now.getFullYear()}/${now.getMonth()+1}`;
+  const gWeek = w.goal ? esc(w.goal) : `<span style="color:#bbb">${t('goal_not_set')}</span>`;
+  const gMonth = m.goal ? esc(m.goal) : `<span style="color:#bbb">${t('goal_not_set')}</span>`;
+  return `<div class="goal-cards">
+    <div class="goal-card" onclick="showView('weekly-review')">
+      <div class="goal-card-head"><span class="goal-card-type">📅 ${t('weekly_goal')}</span><span class="goal-card-range">${wLabel}</span></div>
+      <div class="goal-card-text">${gWeek}</div>
+      <div class="goal-card-cta">${t('weekly_review')} ›</div>
+    </div>
+    <div class="goal-card" onclick="showView('monthly-review')">
+      <div class="goal-card-head"><span class="goal-card-type">🎯 ${t('monthly_goal')}</span><span class="goal-card-range">${mLabel}</span></div>
+      <div class="goal-card-text">${gMonth}${m.achieved?' <span style="color:#3a9d5a;font-weight:700">✓'+t('achieved')+'</span>':''}</div>
+      <div class="goal-card-cta">${t('monthly_review')} ›</div>
+    </div>
+  </div>`;
+}
+
+function changeReviewWeek(delta){
+  const wr = weekRange(reviewWeekKey);
+  const mon = new Date(wr.start+'T00:00:00Z');
+  mon.setUTCDate(mon.getUTCDate() + delta*7);
+  reviewWeekKey = isoWeekKey(new Date(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate()));
+  renderWeeklyReview();
+}
+function changeReviewMonth(delta){
+  const [y,mo] = reviewMonthKey.split('-').map(n=>parseInt(n,10));
+  const d = new Date(y, mo-1+delta, 1);
+  reviewMonthKey = monthKey(d);
+  renderMonthlyReview();
+}
+
+function saveWeeklyGoal(){
+  const v = document.getElementById('weekly-goal-input').value;
+  if(!goals.weekly[reviewWeekKey]) goals.weekly[reviewWeekKey]={};
+  goals.weekly[reviewWeekKey].goal = v;
+  saveGoals(); renderWeeklyReview();
+}
+function saveWeeklySummary(){
+  const v = document.getElementById('weekly-summary-input').value;
+  if(!goals.weekly[reviewWeekKey]) goals.weekly[reviewWeekKey]={};
+  goals.weekly[reviewWeekKey].summary = v;
+  saveGoals(); renderWeeklyReview();
+}
+function saveMonthlyGoal(){
+  const v = document.getElementById('monthly-goal-input').value;
+  if(!goals.monthly[reviewMonthKey]) goals.monthly[reviewMonthKey]={};
+  goals.monthly[reviewMonthKey].goal = v;
+  saveGoals(); renderMonthlyReview();
+}
+function saveMonthlyReview(){
+  const v = document.getElementById('monthly-review-input').value;
+  if(!goals.monthly[reviewMonthKey]) goals.monthly[reviewMonthKey]={};
+  goals.monthly[reviewMonthKey].review = v;
+  saveGoals(); renderMonthlyReview();
+}
+function toggleMonthlyAchieved(){
+  if(!goals.monthly[reviewMonthKey]) goals.monthly[reviewMonthKey]={};
+  goals.monthly[reviewMonthKey].achieved = !goals.monthly[reviewMonthKey].achieved;
+  saveGoals(); renderMonthlyReview();
+}
+
+// その週の練習記録メモを集約
+function sessionsInRange(start,end){
+  return sessions.filter(s=>s.date && s.date>=start && s.date<=end && s.status==='done')
+                 .sort((a,b)=> (a.date<b.date?-1:1));
+}
+
+function renderWeeklyReview(){
+  const w = goals.weekly[reviewWeekKey] || {};
+  const wr = weekRange(reviewWeekKey);
+  const label = `${wr.start.replace(/-/g,'/')} 〜 ${wr.end.replace(/-/g,'/')}`;
+  const list = sessionsInRange(wr.start, wr.end);
+  let html = `<div class="review-header">
+    <button class="btn-secondary btn-sm" onclick="showView('dashboard')">‹ ${t('back')}</button>
+    <p class="section-title" style="margin:0">📅 ${t('weekly_review')}</p>
+  </div>
+  <div class="period-nav" style="margin-bottom:14px">
+    <button class="pn-btn" onclick="changeReviewWeek(-1)">‹</button>
+    <span class="pn-label">${label}</span>
+    <button class="pn-btn" onclick="changeReviewWeek(1)">›</button>
+  </div>`;
+
+  html += `<div class="card">
+    <label class="goal-label-lg">🎯 ${t('weekly_goal')}</label>
+    <textarea id="weekly-goal-input" class="goal-textarea" placeholder="${t('weekly_goal_ph')}" oninput="autoGrow(this)">${w.goal?esc(w.goal):''}</textarea>
+    <button class="btn-primary btn-sm" onclick="saveWeeklyGoal()">${t('save')}</button>
+  </div>`;
+
+  html += `<div style="margin:16px 2px 8px"><p class="section-title" style="margin:0">📝 ${t('weekly_memos')} (${list.length})</p></div>`;
+  if(!list.length){
+    html += `<div class="card" style="text-align:center;padding:24px;color:#aaa;font-size:14px">${t('weekly_no_memos')}</div>`;
+  } else {
+    list.forEach(s=>{
+      const parts=[];
+      if(s.content) parts.push(esc(s.content));
+      if(s.reinforcements) parts.push('👍 '+esc(s.reinforcements));
+      if(s.corrections) parts.push('🔧 '+esc(s.corrections));
+      if(s.sparringNotes) parts.push('🥋 '+esc(s.sparringNotes));
+      if(s.nextGoal) parts.push('➡️ '+esc(s.nextGoal));
+      const body = parts.length ? parts.join('\n\n') : `<span style="color:#bbb">${t('no_memo')}</span>`;
+      html += `<div class="card memo-card" onclick="openDetail(${s.id})">
+        <div class="memo-card-head"><span>${esc(s.date)}</span><span class="memo-card-type">${esc(s.type)}</span></div>
+        <div class="memo-card-body" style="white-space:pre-wrap">${body}</div>
+      </div>`;
+    });
+  }
+
+  html += `<div class="card" style="margin-top:16px">
+    <label class="goal-label-lg">✍️ ${t('weekly_summary')}</label>
+    <textarea id="weekly-summary-input" class="goal-textarea" style="min-height:120px" placeholder="${t('weekly_summary_ph')}" oninput="autoGrow(this)">${w.summary?esc(w.summary):''}</textarea>
+    <button class="btn-primary btn-sm" onclick="saveWeeklySummary()">${t('save')}</button>
+  </div>`;
+
+  document.getElementById('view-weekly-review').innerHTML = html;
+}
+
+function renderMonthlyReview(){
+  const m = goals.monthly[reviewMonthKey] || {};
+  const [y,mo] = reviewMonthKey.split('-').map(n=>parseInt(n,10));
+  const start = `${y}-${String(mo).padStart(2,'0')}-01`;
+  const endDate = new Date(y, mo, 0).getDate();
+  const end = `${y}-${String(mo).padStart(2,'0')}-${String(endDate).padStart(2,'0')}`;
+  const list = sessionsInRange(start,end);
+  const totalMin = list.reduce((a,b)=>a+(b.duration||0),0);
+  const ys=t('year_suffix'), ms=t('month_suffix');
+  const label = ys||ms ? `${y}${ys} ${mo}${ms}` : `${t('cal_months')[mo-1]} ${y}`;
+
+  let html = `<div class="review-header">
+    <button class="btn-secondary btn-sm" onclick="showView('dashboard')">‹ ${t('back')}</button>
+    <p class="section-title" style="margin:0">🎯 ${t('monthly_review')}</p>
+  </div>
+  <div class="period-nav" style="margin-bottom:14px">
+    <button class="pn-btn" onclick="changeReviewMonth(-1)">‹</button>
+    <span class="pn-label">${label}</span>
+    <button class="pn-btn" onclick="changeReviewMonth(1)">›</button>
+  </div>`;
+
+  html += `<div class="card">
+    <label class="goal-label-lg">🎯 ${t('monthly_goal')}</label>
+    <textarea id="monthly-goal-input" class="goal-textarea" placeholder="${t('monthly_goal_ph')}" oninput="autoGrow(this)">${m.goal?esc(m.goal):''}</textarea>
+    <button class="btn-primary btn-sm" onclick="saveMonthlyGoal()">${t('save')}</button>
+  </div>`;
+
+  html += `<div class="stat-grid" style="margin-top:14px">
+    <div class="stat-card"><div class="stat-num">${list.length}</div><div class="stat-label">${t('stat_done')}</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.floor(totalMin/60)}h${totalMin%60?String(totalMin%60)+'m':''}</div><div class="stat-label">${t('stat_time')}</div></div>
+  </div>`;
+
+  html += `<div class="card" style="margin-top:14px">
+    <label class="goal-label-lg">📋 ${t('monthly_check')}</label>
+    <button class="achieve-btn ${m.achieved?'on':''}" onclick="toggleMonthlyAchieved()">${m.achieved?'✓ '+t('achieved'):t('mark_achieved')}</button>
+    <textarea id="monthly-review-input" class="goal-textarea" style="min-height:120px;margin-top:12px" placeholder="${t('monthly_review_ph')}" oninput="autoGrow(this)">${m.review?esc(m.review):''}</textarea>
+    <button class="btn-primary btn-sm" onclick="saveMonthlyReview()">${t('save')}</button>
+  </div>`;
+
+  document.getElementById('view-monthly-review').innerHTML = html;
+}
+
+function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight)+'px'; }
 
 function renderCalendarHtml(year, month) {
   const monthNames=t('cal_months');
